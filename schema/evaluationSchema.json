@@ -1,0 +1,62 @@
+{
+  "version": "v1",
+  "meta": {
+    "title": "Évaluation Jeunes Escrime",
+    "source": "Grille papier FFE / Stage Horizon 2036 - Aix 2025"
+  },
+  "athleteFields": [
+    { "key": "lastName", "label": "Nom", "type": "text", "required": true },
+    { "key": "firstName", "label": "Prénom", "type": "text", "required": true },
+    { "key": "club", "label": "Club", "type": "text", "required": false },
+    { "key": "regionalCommittee", "label": "Comité Régional", "type": "text", "required": false },
+    { "key": "birthDate", "label": "Date de naissance", "type": "date", "required": true },
+    { "key": "armedArm", "label": "Bras armé", "type": "select", "options": ["Droitier", "Gaucher"], "required": true },
+    { "key": "natRankU15", "label": "Classement national M15", "type": "number", "min": 1, "required": false }
+  ],
+  "scale": {
+    "type": "likert4",
+    "values": [
+      { "value": 1, "label": "À développer (point à améliorer)" },
+      { "value": 2, "label": "En cours de développement" },
+      { "value": 3, "label": "En voie de maîtrise" },
+      { "value": 4, "label": "Maîtrise (point fort)" }
+    ]
+  },
+  "domains": [
+    { "key": "physique", "label": "Qualités physiques spécifiques", "type": "likert4" },
+    { "key": "technique", "label": "Qualités techniques spécifiques", "type": "likert4" },
+    { "key": "garde", "label": "Posture et position de garde", "type": "likert4" },
+    { "key": "motivation", "label": "Aspect motivationnel (détermination)", "type": "likert4" },
+    { "key": "main", "label": "Qualités techniques de main", "type": "likert4" },
+    { "key": "mobilite", "label": "Mobilité spécifique", "type": "likert4" },
+    { "key": "cognitif", "label": "Capacités cognitives en escrime (aspects technico-tactiques)", "type": "likert4" }
+  ],
+  "summary": {
+    "key": "bilan",
+    "label": "Bilan individuel général",
+    "type": "textarea",
+    "required": false,
+    "maxLength": 2000
+  },
+  "potential": {
+    "key": "potential",
+    "label": "Potentiel de l'athlète",
+    "type": "radio",
+    "options": [
+      "Potentiel encore à déterminer",
+      "Potentiel intéressant",
+      "Fort potentiel"
+    ],
+    "required": true
+  },
+  "scoring": {
+    "domainScore": "avg(likert4_values) * 25",
+    "globalScore": "avg(domain_scores)",
+    "labels": [
+      { "label": "À suivre", "min": 0, "max": 49.9 },
+      { "label": "Prometteur", "min": 50, "max": 74.9 },
+      { "label": "Talent détecté", "min": 75, "max": 100 }
+    ]
+  }
+}
+
