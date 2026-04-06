@@ -14,7 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Save, Upload, X, Camera } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { useAthleteApi } from "@/hooks/use-athlete-api";
+import { useAthleteApi, type Athlete } from "@/hooks/use-athlete-api";
+import { demoAthleteToApiAthlete } from "@/lib/demo-athlete-api-map";
 
 export default function EditAthletePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<number | null>(null);
+  const [routeAthleteId, setRouteAthleteId] = useState<string>("");
+  const [isDemoAthlete, setIsDemoAthlete] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -60,10 +63,27 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
     (async () => {
       setLoading(true);
       setError(null);
+      setIsDemoAthlete(false);
       try {
         const resolvedParams = await params;
-        setAthleteId(Number(resolvedParams.id));
-        const athlete = await getAthlete(Number(resolvedParams.id));
+        setRouteAthleteId(resolvedParams.id);
+        const numericId = Number(resolvedParams.id);
+        setAthleteId(numericId);
+
+        let athlete: Athlete;
+        try {
+          athlete = await getAthlete(numericId);
+        } catch {
+          const { DEMO_ATHLETES } = await import("@/lib/demo-athletes");
+          const demo = DEMO_ATHLETES.find((a) => a.id === resolvedParams.id);
+          if (!demo) {
+            setError("Athlète introuvable (API indisponible et pas de profil de démo pour cet id).");
+            return;
+          }
+          athlete = demoAthleteToApiAthlete(demo);
+          setIsDemoAthlete(true);
+        }
+
         setFormData({
           firstName: athlete.first_name || "",
           lastName: athlete.last_name || "",
@@ -95,7 +115,7 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
         setOriginalAvatarUrl(athlete.avatar_url || "");
         setAvatarPreview(athlete.avatar_url || "");
       } catch (err) {
-        setError("Failed to load athlete data");
+        setError("Impossible de charger les données de l'athlète.");
       } finally {
         setLoading(false);
       }
@@ -178,12 +198,25 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
           occupation: tutorInfo.tutorOccupation || undefined,
         };
       }
-      await updateAthlete(athleteId, athletePayload);
-      if (avatarFile) {
-        await uploadAthleteAvatar(athleteId, avatarFile);
+      try {
+        await updateAthlete(athleteId, athletePayload);
+        if (avatarFile) {
+          await uploadAthleteAvatar(athleteId, avatarFile);
+        }
+      } catch (apiErr) {
+        if (isDemoAthlete) {
+          toast({
+            title: "Mode démo",
+            description:
+              "L'API backend n'est pas disponible. Les modifications ne sont pas enregistrées sur le serveur.",
+          });
+          router.push(`/athletes/${routeAthleteId || athleteId}`);
+          return;
+        }
+        throw apiErr;
       }
       toast({ title: "Succès!", description: "L'athlète a été mis à jour avec succès." });
-      router.push(`/athletes/${athleteId}`);
+      router.push(`/athletes/${routeAthleteId || athleteId}`);
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Échec de la mise à jour de l'athlète. Veuillez réessayer.", variant: "destructive" });
     } finally {
@@ -205,7 +238,7 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
           {/* Header */}
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
-              <Link href={`/athletes/${athleteId}`}>
+              <Link href={`/athletes/${routeAthleteId || athleteId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
               </Link>
             </Button>
@@ -563,7 +596,7 @@ export default function EditAthletePage({ params }: { params: Promise<{ id: stri
             {/* Form Actions */}
             <div className="flex justify-end gap-4">
               <Button variant="outline" type="button" asChild>
-                <Link href={`/athletes/${athleteId}`}>Annuler</Link>
+                <Link href={`/athletes/${routeAthleteId || athleteId}`}>Annuler</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />

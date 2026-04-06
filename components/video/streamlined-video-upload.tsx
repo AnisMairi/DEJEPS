@@ -232,12 +232,22 @@ export function StreamlinedVideoUpload() {
         const athletesData = await getAthletes({ limit: 100 })
         setAthletes(athletesData)
       } catch (error) {
-        console.error('Error loading athletes:', error)
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger la liste des athlètes",
-          variant: "destructive",
-        })
+        console.error("Error loading athletes:", error)
+        try {
+          const { DEMO_ATHLETES } = await import("@/lib/demo-athletes")
+          const { demoAthletesToApiList } = await import("@/lib/demo-athlete-api-map")
+          setAthletes(demoAthletesToApiList(DEMO_ATHLETES) as Athlete[])
+          toast({
+            title: "Mode démo",
+            description: "Liste des athlètes chargée depuis les données locales (API indisponible).",
+          })
+        } catch {
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger la liste des athlètes",
+            variant: "destructive",
+          })
+        }
       } finally {
         setLoadingAthletes(false)
       }

@@ -33,25 +33,37 @@ import {
   Cell,
 } from "recharts"
 import { useEffect, useState } from "react"
+import type { DemoEvaluation } from "@/lib/demo-evaluations"
+import type { DemoAthlete } from "@/lib/demo-athletes"
+
+/** Score 0–100 pour comparer pré-éval MA (/28) et fédéral (/60) */
+function evaluationScorePercent(e: DemoEvaluation): number {
+  if (e.kind === "ma_pre") return (e.totalScore / 28) * 100
+  return (e.totalScore / 60) * 100
+}
+
+function scoreCategory(percent: number): "À suivre" | "Prometteur" | "Talent détecté" {
+  if (percent < 50) return "À suivre"
+  if (percent < 75) return "Prometteur"
+  return "Talent détecté"
+}
 
 export default function AnalyticsPage() {
-  const [athletesData, setAthletesData] = useState<any[]>([])
-  const [evaluationsData, setEvaluationsData] = useState<any[]>([])
+  const [athletesData, setAthletesData] = useState<DemoAthlete[]>([])
+  const [evaluationsData, setEvaluationsData] = useState<DemoEvaluation[]>([])
   const [videosData, setVideosData] = useState<any[]>([])
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Charger les athlètes
-        const { DEMO_ATHLETES } = await import("@/lib/demo-athletes")
-        setAthletesData(DEMO_ATHLETES)
+        const { DEMO_ATHLETES: athletes } = await import("@/lib/demo-athletes")
+        setAthletesData(athletes)
 
-        // Charger les évaluations
         const { getEvaluations } = await import("@/lib/demo-evaluations")
-        const allEvaluations = getEvaluations()
-        setEvaluationsData(allEvaluations)
+        const { seedDemoEvaluations } = await import("@/lib/demo-evaluations-seed")
+        await seedDemoEvaluations()
+        setEvaluationsData(getEvaluations())
 
-        // Charger les vidéos
         const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
         setVideosData(DEMO_VIDEOS)
       } catch (err) {
@@ -63,7 +75,9 @@ export default function AnalyticsPage() {
 
   // Statistiques par arme
   const weaponStats = athletesData.reduce((acc, athlete) => {
-    const weapon = athlete.weapon === "epee" ? "Épée" : athlete.weapon === "foil" ? "Fleuret" : "Sabre"
+    const w = athlete.weapon
+    const weapon =
+      w === "epee" || w === "épée" ? "Épée" : w === "foil" ? "Fleuret" : "Sabre"
     acc[weapon] = (acc[weapon] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -84,9 +98,10 @@ export default function AnalyticsPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 10)
 
-  // Distribution des scores d'évaluation
+  // Distribution des scores d'évaluation (normalisés 0–100)
   const scoreDistribution = evaluationsData.reduce((acc, evaluation) => {
-    const range = evaluation.globalScore < 50 ? "À suivre" : evaluation.globalScore < 75 ? "Prometteur" : "Talent détecté"
+    const p = evaluationScorePercent(evaluation)
+    const range = scoreCategory(p)
     acc[range] = (acc[range] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -141,7 +156,9 @@ export default function AnalyticsPage() {
   const totalEvaluations = evaluationsData.length
   const totalVideos = videosData.length
   const averageScore = evaluationsData.length > 0
-    ? (evaluationsData.reduce((sum, e) => sum + e.globalScore, 0) / evaluationsData.length).toFixed(1)
+    ? (
+        evaluationsData.reduce((sum, e) => sum + evaluationScorePercent(e), 0) / evaluationsData.length
+      ).toFixed(1)
     : "0.0"
 
   return (
@@ -226,7 +243,9 @@ export default function AnalyticsPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }) =>
+                            `${name}: ${(((percent ?? 0) as number) * 100).toFixed(0)}%`
+                          }
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
@@ -267,23 +286,30 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {topClubs.map((club, index) => (
-                      <div key={club.name} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline">#{index + 1}</Badge>
-                          <span className="font-medium">{club.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-32 bg-muted rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${(club.value / topClubs[0].value) * 100}%` }}
-                            />
+                    {topClubs.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Aucune donnée club.</p>
+                    ) : (
+                      topClubs.map((club, index) => {
+                        const maxVal = topClubs[0]?.value || 1
+                        return (
+                          <div key={club.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline">#{index + 1}</Badge>
+                              <span className="font-medium">{club.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-32 bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{ width: `${(club.value / maxVal) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-bold">{club.value}</span>
+                            </div>
                           </div>
-                          <span className="text-sm font-bold">{club.value}</span>
-                        </div>
-                      </div>
-                    ))}
+                        )
+                      })
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -372,26 +398,38 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {evaluationsData
-                        .sort((a, b) => b.globalScore - a.globalScore)
+                      {[...evaluationsData]
+                        .sort((a, b) => b.totalScore - a.totalScore)
                         .slice(0, 5)
-                        .map((evaluation, index) => (
-                          <div key={evaluation.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline">#{index + 1}</Badge>
-                              <div>
-                                <p className="font-medium">{evaluation.firstName} {evaluation.lastName}</p>
-                                <p className="text-xs text-muted-foreground">{evaluation.club}</p>
+                        .map((evaluation, index) => {
+                          const athlete = athletesData.find((x) => x.id === evaluation.athleteId)
+                          const name = athlete
+                            ? `${athlete.first_name} ${athlete.last_name}`
+                            : `Athlète ${evaluation.athleteId}`
+                          const club = athlete?.club ?? "—"
+                          const pct = evaluationScorePercent(evaluation)
+                          const label =
+                            evaluation.kind === "ma_pre"
+                              ? `MA ${evaluation.totalScore}/28`
+                              : `Fédéral ${evaluation.totalScore}/60`
+                          return (
+                            <div key={evaluation.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <Badge variant="outline">#{index + 1}</Badge>
+                                <div>
+                                  <p className="font-medium">{name}</p>
+                                  <p className="text-xs text-muted-foreground">{club}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-primary">{pct.toFixed(0)}%</p>
+                                <Badge variant="secondary" className="text-xs">
+                                  {label}
+                                </Badge>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary">{evaluation.globalScore.toFixed(1)}%</p>
-                              <Badge variant="secondary" className="text-xs">
-                                {evaluation.scoreLabel}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                     </div>
                   </CardContent>
                 </Card>
@@ -403,21 +441,24 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {["Fort potentiel", "Potentiel intéressant", "Potentiel encore à déterminer"].map((potential) => {
-                        const count = evaluationsData.filter(evaluation => evaluation.potential === potential).length
-                        const percentage = evaluationsData.length > 0
-                          ? ((count / evaluationsData.length) * 100).toFixed(1)
-                          : "0.0"
+                      {(["ma_pre", "federal"] as const).map((kind) => {
+                        const label = kind === "ma_pre" ? "Pré-évaluations MA" : "Évaluations fédérales"
+                        const count = evaluationsData.filter((e) => e.kind === kind).length
+                        const pctNum =
+                          evaluationsData.length > 0 ? (count / evaluationsData.length) * 100 : 0
+                        const pctStr = pctNum.toFixed(1)
                         return (
-                          <div key={potential} className="space-y-2">
+                          <div key={kind} className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="font-medium">{potential}</span>
-                              <span className="text-muted-foreground">{count} ({percentage}%)</span>
+                              <span className="font-medium">{label}</span>
+                              <span className="text-muted-foreground">
+                                {count} ({pctStr}%)
+                              </span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2">
                               <div
                                 className="bg-primary h-2 rounded-full"
-                                style={{ width: `${percentage}%` }}
+                                style={{ width: `${pctNum}%` }}
                               />
                             </div>
                           </div>

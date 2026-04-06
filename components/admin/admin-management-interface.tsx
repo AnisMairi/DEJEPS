@@ -177,7 +177,27 @@ export function AdminManagementInterface() {
         })
         setVideos(transformedVideos)
       })
-      .catch(() => setVideos([]))
+      .catch(async () => {
+        try {
+          const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
+          setVideos(
+            DEMO_VIDEOS.map((v) => ({
+              id: v.id,
+              title: v.title,
+              athlete: v.athlete,
+              uploader: v.uploader,
+              uploadDate: v.uploadedAt,
+              status: "published" as const,
+              views: v.views,
+              comments: v.comments,
+              reports: 0,
+              rawVideo: v,
+            }))
+          )
+        } catch {
+          setVideos([])
+        }
+      })
       .finally(() => setLoadingVideos(false))
 
     // Load comments immediately for stats
@@ -319,10 +339,26 @@ export function AdminManagementInterface() {
           })
           setVideos(transformedVideos)
         })
-        .catch((error) => {
-          console.error('Error loading videos:', error)
-          // Don't set error message for empty results, let the UI handle it
-          setVideos([])
+        .catch(async (error) => {
+          console.error("Error loading videos:", error)
+          try {
+            const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
+            const transformedVideos = DEMO_VIDEOS.map((v) => ({
+              id: v.id,
+              title: v.title,
+              athlete: v.athlete,
+              uploader: v.uploader,
+              uploadDate: v.uploadedAt,
+              status: "published" as const,
+              views: v.views,
+              comments: v.comments,
+              reports: 0,
+              rawVideo: v,
+            }))
+            setVideos(transformedVideos)
+          } catch {
+            setVideos([])
+          }
         })
         .finally(() => setLoadingVideos(false))
     }
