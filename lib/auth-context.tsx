@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { validateDemoCredentials, generateMockToken, decodeMockToken } from "./demo-users"
 
-export type UserRole = "local_contact" | "coach" | "administrator"
+export type UserRole = "local_contact" | "coach" | "administrator" | "federal_evaluator"
 
 export interface User {
   id: string

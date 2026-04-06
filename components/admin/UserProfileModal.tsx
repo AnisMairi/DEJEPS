@@ -9,7 +9,7 @@ interface User {
   id: number | string
   email: string
   name: string
-  role: "local_contact" | "coach" | "administrator"
+  role: "local_contact" | "coach" | "administrator" | "federal_evaluator"
   phone?: string
   club_name?: string
   bio?: string
@@ -39,12 +39,14 @@ const roleLabels = {
   administrator: "Administrateur",
   coach: "Entraîneur",
   local_contact: "Contact Local",
+  federal_evaluator: "Évaluateur fédéral",
 }
 
 const roleColors = {
   administrator: "bg-purple-100 text-purple-800",
   coach: "bg-blue-100 text-blue-800",
   local_contact: "bg-green-100 text-green-800",
+  federal_evaluator: "bg-amber-100 text-amber-900",
 }
 
 const statusColors = {
