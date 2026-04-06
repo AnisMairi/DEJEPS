@@ -1,0 +1,227 @@
+━━━━━━━━━━━━━━━━━━━━━━━
+POINT 1 — PROFIL MAÎTRE D'ARMES (écran existant — à modifier)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Contexte dossier (Chapitre 7, Annexe C) :
+Dans le dispositif Sabre Talent, le maître d'armes (MA) est le premier maillon de la détection. C'est lui qui, dans son club, observe ses jeunes tireurs au quotidien. Quand il repère un potentiel, il filme l'athlète, dépose la vidéo sur la plateforme, et saisit une première évaluation qu'on appelle "pré-évaluation". Cette pré-évaluation porte uniquement sur les 7 compétences de base communes à toutes les armes (le "tronc commun"). Elle ne constitue pas la note finale — elle sert de premier repérage. La note définitive sera donnée plus tard par un évaluateur fédéral (voir Point 2).
+
+Ce qu'il faut développer :
+
+Modifier la grille d'évaluation existante (écran "Fiche évaluation") pour qu'elle affiche les 7 items suivants avec leur code :
+
+• TC1 — Posture et équilibre
+• TC2 — Mobilité des appuis
+• TC3 — Coordination générale
+• TC4 — Gestion de la distance
+• TC5 — Lecture de jeu
+• TC6 — Détermination
+• TC7 — Gestion émotionnelle
+
+Chaque item est noté sur une échelle de 1 à 4 :
+1 = À développer (la compétence n'est pas présente)
+2 = En cours de développement (présente mais inconsistante)
+3 = En voie de maîtrise (généralement correcte)
+4 = Maîtrise / point fort (automatisée, constante)
+
+Score affiché : X / 28 (7 items × 4 points maximum)
+
+Ajouter un champ libre "Observations" en bas de la grille (texte libre, pour que le MA puisse noter ses remarques qualitatives).
+
+Après soumission, le statut de l'évaluation passe à : EN ATTENTE DE VALIDATION
+(Ce statut signifie que la pré-évaluation du MA est enregistrée, mais qu'un évaluateur fédéral doit encore valider en notant de son côté.)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+POINT 2 — PROFIL ÉVALUATEUR FÉDÉRAL (nouveau — à créer)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Contexte dossier (Chapitre 7, Annexe C, Annexe E) :
+C'est le cœur scientifique du dispositif. La Commission fédérale de détection est composée de 5 à 6 cadres nationaux experts (entraîneurs nationaux, CTN Détection). Leur rôle : regarder les vidéos déposées par les MA et évaluer chaque athlète sur une grille plus complète de 15 items (les 7 du tronc commun + 8 techniques spécifiques au sabre).
+
+Le principe fondamental est l'évaluation "en aveugle" : pour garantir l'objectivité, l'évaluateur fédéral ne doit pas savoir d'où vient le jeune, quel club il représente, ni quelle note le MA lui a donnée. Il juge uniquement ce qu'il voit sur la vidéo. C'est ce qui garantit l'équité entre un jeune d'Île-de-France et un jeune de Guadeloupe.
+
+Ce qu'il faut développer :
+
+A) Ajouter un 4ème compte de démonstration sur la page de connexion (actuellement il y a Administrateur, Coach Principal, Contact Local) :
+• Nom affiché : Évaluateur Fédéral
+• Email : evaluateur@federation.fr
+• Badge : Évaluateur
+
+B) Quand on se connecte avec ce profil, l'évaluateur accède à une interface qui montre UNIQUEMENT :
+• La vidéo de l'athlète
+• La catégorie d'âge (M13 ou M15)
+• La grille 15 items vierge à remplir
+
+Et qui MASQUE (c'est le principe de l'aveugle) :
+• La note du MA (/28) → l'évaluateur ne doit pas être influencé
+• Le nom du club → pour éviter les biais de réputation
+• La région → même raison
+• Les évaluations précédentes → chaque évaluation doit être indépendante
+
+C) Grille Évaluateur Fédéral — 15 items, échelle 1 à 4, score /60 :
+
+TRONC COMMUN (TC1 à TC7) — les mêmes 7 items que le MA :
+• TC1 — Posture et équilibre
+• TC2 — Mobilité des appuis
+• TC3 — Coordination générale
+• TC4 — Gestion de la distance
+• TC5 — Lecture de jeu
+• TC6 — Détermination
+• TC7 — Gestion émotionnelle
+
+SPÉCIFIQUES SABRE (S1 à S8) — 8 items supplémentaires propres au sabre :
+• S1 — Attaque simple (fente)
+• S2 — Attaque composée
+• S3 — Parade-riposte
+• S4 — Contre-attaque
+• S5 — Préparation d'attaque
+• S6 — Flèche
+• S7 — Jeu de fer
+• S8 — Reprise d'attaque
+
+Même échelle 1 à 4 que le MA.
+Score affiché : X / 60 (15 items × 4 points maximum)
+Champ libre "Observations" en bas.
+
+Après soumission, le statut passe à : VALIDÉE
+
+D) Ajouter le rôle "Évaluateur fédéral" dans le panel d'administration (gestion des utilisateurs), pour pouvoir gérer les droits d'accès de ce profil.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+POINT 3 — STATUTS ET ALERTE DISCORDANCE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Contexte dossier (Chapitre 7, §protocole discordance) :
+Pour garantir la fiabilité des évaluations, certaines vidéos sont évaluées par deux évaluateurs fédéraux indépendamment (c'est la "double-cotation"). Si les deux évaluateurs donnent des scores très différents sur le même athlète, ça signale un problème : soit la vidéo est ambiguë, soit un évaluateur a mal interprété un critère. Dans ce cas, un 3ème évaluateur intervient pour trancher.
+
+Le seuil retenu : un écart de plus de 6 points sur 60 (soit 10% de l'échelle). C'est un standard utilisé dans l'évaluation sportive et académique.
+
+Ce qu'il faut développer :
+
+Dans le panel des évaluations, afficher 3 statuts possibles avec des badges de couleur :
+
+• EN ATTENTE (badge jaune) — Le MA a déposé la vidéo + sa pré-évaluation /28. L'évaluation attend qu'un évaluateur fédéral la valide.
+
+• VALIDÉE (badge vert) — Un évaluateur fédéral a soumis sa note /60. L'évaluation est complète.
+
+• DISCORDANCE (badge rouge) — Deux évaluateurs fédéraux ont noté le même athlète et l'écart entre leurs deux scores dépasse 6 points sur 60.
+
+ATTENTION — Point crucial pour le développement :
+La discordance compare UNIQUEMENT deux évaluateurs fédéraux entre eux. C'est-à-dire : score Évaluateur A (/60) vs score Évaluateur B (/60). On ne compare JAMAIS la note du MA (/28) avec la note d'un évaluateur fédéral (/60). Pourquoi ? Parce que ce sont deux grilles totalement différentes :
+— Le MA note sur 7 items → score /28
+— L'évaluateur fédéral note sur 15 items → score /60
+Comparer un /28 à un /60 n'a aucun sens mathématique ni métier.
+
+Quand l'écart entre deux évaluateurs fédéraux dépasse 6 points :
+→ Alerte automatique visible dans le panel
+→ Statut affiché : DISCORDANCE — 3ÈME LECTURE REQUISE
+→ Un 3ème évaluateur fédéral est invité à noter la vidéo en aveugle (sans voir les deux notes précédentes)
+→ Le score final retenu = la médiane des 3 lectures
+
+Exemple concret pour bien coder la logique :
+Évaluateur A donne 42/60
+Évaluateur B donne 49/60
+Écart = 7 points > 6 → DISCORDANCE déclenchée
+Évaluateur C (3ème lecture) donne 46/60
+Score final = médiane (42, 46, 49) = 46/60
+
+━━━━━━━━━━━━━━━━━━━━━━━
+POINT 4 — RADAR TESTS PHYSIQUES + GRILLE DE SAISIE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Contexte dossier (Chapitre 6, Annexe B) :
+En plus de l'évaluation technique sur vidéo (Points 1 et 2), le dispositif Sabre Talent évalue les capacités physiques des jeunes lors de stages nationaux. Il y a deux rendez-vous par an :
+— Stage de détection en juillet (première mesure)
+— Stage de retest à la Toussaint (deuxième mesure, pour voir la progression)
+
+Le dossier prévoit 6 tests physiques au total, mais pour le prototype on en retient 4 (les deux autres — Fente chrono et Fente×5 — seront ajoutés dans la version opérationnelle).
+
+Chaque test a des barèmes différents selon la catégorie d'âge (M13 ou M15) et le sexe (garçons ou filles). Ces barèmes sont issus de la littérature scientifique et du test SFCODT que j'ai publié.
+
+Ce qu'il faut développer :
+
+A) Formulaire de saisie des résultats de tests
+
+Créer un formulaire accessible au profil Coach Principal (c'est le staff du stage qui saisit les résultats).
+
+Pour chaque athlète, il y a 2 sessions possibles :
+• Session 1 : Stage juillet (détection)
+• Session 2 : Stage Toussaint (retest)
+
+Chaque session comporte 4 champs :
+• SFCODT — temps en secondes (test d'agilité spécifique escrime — plus bas = meilleur)
+• CMJ — hauteur en cm (saut vertical — plus haut = meilleur)
+• Yo-Yo IR1 — distance en mètres (endurance intermittente — plus haut = meilleur)
+• Sprint 10m — temps en secondes (vitesse d'accélération — plus bas = meilleur)
+
+Si un athlète n'a pas encore participé à un stage → afficher "En attente du stage national" à la place des résultats.
+
+B) Radar sur le profil athlète
+
+Sur la fiche de chaque athlète, ajouter un graphique radar à 4 axes (un axe par test) avec 2 courbes superposées :
+• Courbe 1 : résultats du stage juillet
+• Courbe 2 : résultats du stage Toussaint
+
+L'intérêt : on voit d'un coup d'œil la progression de l'athlète entre les deux sessions. C'est le cœur de l'"observation longitudinale" du dossier — on ne juge pas un jeune sur un seul instant, on regarde comment il évolue.
+
+C) Barèmes à intégrer
+
+Ces barèmes servent à situer chaque résultat dans une zone de performance (Excellent / Bon / Moyen / À développer). Ils varient selon la catégorie et le sexe.
+
+SFCODT (secondes — plus bas = meilleur) :
+M13 Garçons : Excellent < 7,50 / Bon 7,50–8,49 / Moyen 8,50–8,99 / À développer > 9,00
+M13 Filles : Excellent < 7,80 / Bon 7,80–8,79 / Moyen 8,80–9,29 / À développer > 9,30
+M15 Garçons : Excellent < 7,20 / Bon 7,20–8,19 / Moyen 8,20–8,69 / À développer > 8,70
+M15 Filles : Excellent < 7,50 / Bon 7,50–8,49 / Moyen 8,50–8,99 / À développer > 9,00
+
+CMJ (cm — plus haut = meilleur) :
+M13 Garçons : Excellent > 35 / Bon 25–35 / Moyen 20–24 / À développer < 20
+M13 Filles : Excellent > 30 / Bon 22–30 / Moyen 18–21 / À développer < 18
+M15 Garçons : Excellent > 40 / Bon 30–40 / Moyen 25–29 / À développer < 25
+M15 Filles : Excellent > 33 / Bon 25–33 / Moyen 21–24 / À développer < 21
+
+Yo-Yo IR1 (mètres — plus haut = meilleur) :
+M13 Garçons : Excellent > 1600 / Bon 1040–1600 / Moyen 760–1000 / À développer < 760
+M13 Filles : Excellent > 1200 / Bon 800–1200 / Moyen 600–760 / À développer < 600
+M15 Garçons : Excellent > 1920 / Bon 1280–1920 / Moyen 960–1240 / À développer < 960
+M15 Filles : Excellent > 1440 / Bon 1000–1440 / Moyen 760–960 / À développer < 760
+
+Sprint 10m (secondes — plus bas = meilleur) :
+M13 Garçons : Excellent < 1,85 / Bon 1,85–1,95 / Moyen 1,95–2,10 / À développer > 2,10
+M13 Filles : Excellent < 1,95 / Bon 1,95–2,05 / Moyen 2,05–2,20 / À développer > 2,20
+M15 Garçons : Excellent < 1,75 / Bon 1,75–1,85 / Moyen 1,85–2,00 / À développer > 2,00
+M15 Filles : Excellent < 1,85 / Bon 1,85–1,95 / Moyen 1,95–2,10 / À développer > 2,10
+
+━━━━━━━━━━━━━━━━━━━━━━━
+POINT 5 — DONNÉES DÉMO M13 ET M15
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Contexte dossier (Chapitre 1, Annexe K) :
+Le projet cible les catégories M13 (12-13 ans) et M15 (14-15 ans). Or actuellement les profils de démonstration dans le prototype montrent des athlètes de 15, 17, 18, 19 et 20 ans, dans des armes variées (épée, fleuret, sabre). Pour la soutenance devant le jury, il faut que la démo montre immédiatement le périmètre réel du projet.
+
+Ce qu'il faut développer :
+
+Remplacer les profils fictifs actuels par des profils réalistes M13 et M15, garçons et filles, en sabre, avec des noms, clubs et régions crédibles (par exemple : un jeune sabreur du Cercle d'Escrime de Bordeaux en Nouvelle-Aquitaine, une jeune sabreuse du SCUF Paris en Île-de-France, etc.).
+
+Les profils visibles par défaut doivent être des M13 et M15 en sabre.
+
+Les catégories M17/M20 et les autres armes restent disponibles dans les filtres — on ne supprime rien, on change juste les données de démo pour qu'elles correspondent au projet.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+CE QU'ON NE TOUCHE PAS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+• Tous les écrans existants — rien ne se supprime, on ajoute par-dessus
+• Toutes les catégories FFE dans les filtres — M13/M14/M15/M17/M20
+• Fente chrono et Fente×5 — pas dans cette version du prototype (ils restent dans le dossier pour la version opérationnelle, on les expliquera à l'oral si le jury pose la question)
+
+━━━━━━━━━━━━━━━━━━━━━━━
+RÉFÉRENCES DANS LE DOSSIER
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Si tu veux creuser un point, voici où trouver le détail dans le dossier joint :
+• Chapitre 7 — Gouvernance, évaluation en aveugle, protocole discordance, quorum Commission
+• Chapitre 6 — Architecture du dispositif et batterie de tests physiques
+• Chapitre 8bis — Référentiel Pack Sabre Initiation (les 15 items détaillés avec critères observables)
+• Annexe B — Protocoles complets des 6 tests physiques avec tous les barèmes
+• Annexe C — Grille complète des 15 items (TC1–TC7 + S1–S8) avec niveaux et erreurs fréquentes
+• Annexe E — Descriptions détaillées des 12 écrans du prototype

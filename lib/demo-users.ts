@@ -37,6 +37,16 @@ export const DEMO_USERS: DemoUser[] = [
       role: "local_contact",
     },
   },
+  {
+    email: "evaluateur@federation.fr",
+    password: "eval123",
+    user: {
+      id: "4",
+      email: "evaluateur@federation.fr",
+      name: "Évaluateur Fédéral",
+      role: "federal_evaluator",
+    },
+  },
 ]
 
 export function validateDemoCredentials(email: string, password: string): User | null {

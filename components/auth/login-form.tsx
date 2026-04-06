@@ -147,6 +147,8 @@ export function LoginForm() {
                           ? "default"
                           : demoUser.user.role === "coach"
                           ? "secondary"
+                          : demoUser.user.role === "federal_evaluator"
+                          ? "default"
                           : "outline"
                       }
                       className="ml-2 shrink-0"
@@ -155,6 +157,8 @@ export function LoginForm() {
                         ? "Admin"
                         : demoUser.user.role === "coach"
                         ? "Coach"
+                        : demoUser.user.role === "federal_evaluator"
+                        ? "Évaluateur"
                         : "Contact"}
                     </Badge>
                   </div>

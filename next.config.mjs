@@ -7,6 +7,8 @@ const __dirname = path.dirname(__filename)
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
+  /** Dossiers `route/index.html` : meilleure compatibilité hébergeurs statiques (ex. Cloudflare Pages). */
+  trailingSlash: true,
   eslint: {
     ignoreDuringBuilds: true,
   },

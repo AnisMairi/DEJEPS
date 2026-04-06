@@ -1,6 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useAuth } from "@/lib/auth-context"
+import { buildRadarChartData, getPhysicalRecord } from "@/lib/demo-physical-tests"
+import { TRONC_COMMUN_ITEMS, SABRE_SPECIFIC_ITEMS } from "@/lib/sabre-evaluation-constants"
+import type { DemoEvaluation } from "@/lib/demo-evaluations"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -97,11 +101,12 @@ interface ComprehensiveAthleteProfileProps {
 }
 
 export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteProfileProps) {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("overview");
   const [athlete, setAthlete] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [evaluations, setEvaluations] = useState<any[]>([]);
+  const [evaluations, setEvaluations] = useState<DemoEvaluation[]>([]);
 
   useEffect(() => {
     // Mode démo : utiliser les données de démo au lieu de l'API
@@ -133,6 +138,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
           last_name: demoAthlete.last_name,
           date_of_birth: demoAthlete.date_of_birth,
           gender: demoAthlete.gender,
+          age_category: demoAthlete.age_category,
           weapon: demoAthlete.weapon,
           skill_level: demoAthlete.skill_level,
           avatar_url: demoAthlete.avatar_url,
@@ -346,6 +352,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     lastName: athlete?.last_name || "Doe",
     age: age || 25, // Use calculated age or fallback
     gender: athlete?.gender || "Homme",
+    ageCategory: (athlete as { age_category?: string })?.age_category,
     weapon: athlete?.weapon || "Sabre",
     skillLevel: athlete?.skill_level || "Intermédiaire",
     avatar: athlete?.avatar_url || "https://placehold.co/200x200?text=Athlete",
@@ -397,6 +404,13 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     { subject: "Tactique", A: mappedAthlete.evaluations.tactics, fullMark: 10 },
   ]
 
+  const physicalRadar = buildRadarChartData({
+    id: athleteId,
+    date_of_birth: athlete.date_of_birth,
+    gender: athlete.gender as "male" | "female",
+  })
+  const physRec = getPhysicalRecord(athleteId)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -405,13 +419,23 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
           <h1 className="text-3xl font-bold">Profil Athlète</h1>
           <p className="text-muted-foreground">Suivi complet et analyse de performance</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/athletes/${mappedAthlete.id}/evaluate`}>
-              <Star className="h-4 w-4 mr-2" />
-              Évaluer
-            </Link>
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {(user?.role === "local_contact" || user?.role === "administrator") && (
+            <Button variant="outline" asChild>
+              <Link href={`/athletes/${mappedAthlete.id}/evaluate`}>
+                <Star className="h-4 w-4 mr-2" />
+                Pré-évaluation MA
+              </Link>
+            </Button>
+          )}
+          {(user?.role === "coach" || user?.role === "administrator") && (
+            <Button variant="outline" asChild>
+              <Link href={`/athletes/${mappedAthlete.id}/physical-tests`}>
+                <Activity className="h-4 w-4 mr-2" />
+                Tests physiques
+              </Link>
+            </Button>
+          )}
           <Button asChild>
             <Link href={`/athletes/${mappedAthlete.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
@@ -443,7 +467,10 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                   </Badge>
                 </div>
 
-                <div className="flex justify-center gap-2">
+                <div className="flex justify-center gap-2 flex-wrap">
+                  {mappedAthlete.ageCategory && (
+                    <Badge variant="default">Sabre Talent {mappedAthlete.ageCategory}</Badge>
+                  )}
                   <Badge variant="outline" className="capitalize">
                     {mappedAthlete.weapon}
                   </Badge>
@@ -512,9 +539,10 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
         {/* Main Content */}
         <div className="lg:col-span-3">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
               <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
               <TabsTrigger value="videos">Vidéos ({mappedAthlete.videos.length})</TabsTrigger>
+              <TabsTrigger value="physical">Tests physiques</TabsTrigger>
               <TabsTrigger value="evaluations">Évaluations</TabsTrigger>
               <TabsTrigger value="progression">Progression</TabsTrigger>
               <TabsTrigger value="history">Historique</TabsTrigger>
@@ -638,161 +666,145 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
               </Card>
             </TabsContent>
 
+            <TabsContent value="physical" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Tests physiques — observation longitudinale
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <p className="text-sm text-muted-foreground">
+                    Les barèmes normalisent chaque test sur une échelle 0–100 pour superposer juillet et Toussaint sur le
+                    radar (Coach Principal saisit les résultats).
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="rounded-lg border p-4 space-y-2">
+                      <div className="font-semibold">Session 1 — Stage juillet</div>
+                      {physRec.session1 ? (
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>SFCODT : {physRec.session1.sfcodtSeconds ?? "—"} s</li>
+                          <li>CMJ : {physRec.session1.cmjCm ?? "—"} cm</li>
+                          <li>Yo-Yo IR1 : {physRec.session1.yoyoMeters ?? "—"} m</li>
+                          <li>Sprint 10 m : {physRec.session1.sprint10Seconds ?? "—"} s</li>
+                        </ul>
+                      ) : (
+                        <p className="text-muted-foreground">En attente du stage national</p>
+                      )}
+                    </div>
+                    <div className="rounded-lg border p-4 space-y-2">
+                      <div className="font-semibold">Session 2 — Toussaint</div>
+                      {physRec.session2 ? (
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>SFCODT : {physRec.session2.sfcodtSeconds ?? "—"} s</li>
+                          <li>CMJ : {physRec.session2.cmjCm ?? "—"} cm</li>
+                          <li>Yo-Yo IR1 : {physRec.session2.yoyoMeters ?? "—"} m</li>
+                          <li>Sprint 10 m : {physRec.session2.sprint10Seconds ?? "—"} s</li>
+                        </ul>
+                      ) : (
+                        <p className="text-muted-foreground">En attente du stage national</p>
+                      )}
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <RadarChart data={physicalRadar}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="subject" />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                      <Radar
+                        name="Juillet"
+                        dataKey="juillet"
+                        stroke="#2563eb"
+                        fill="#2563eb"
+                        fillOpacity={0.2}
+                        connectNulls
+                      />
+                      <Radar
+                        name="Toussaint"
+                        dataKey="toussaint"
+                        stroke="#ea580c"
+                        fill="#ea580c"
+                        fillOpacity={0.2}
+                        connectNulls
+                      />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="evaluations" className="space-y-6">
               {evaluations.length === 0 ? (
                 <Card>
-                  <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground">Aucune évaluation disponible pour cet athlète.</p>
-                    <Button asChild className="mt-4">
-                      <Link href={`/athletes/${athleteId}/evaluate`}>
-                        <Star className="h-4 w-4 mr-2" />
-                        Créer une évaluation
-                      </Link>
-                    </Button>
+                  <CardContent className="p-8 text-center space-y-4">
+                    <p className="text-muted-foreground">Aucune évaluation Sabre Talent enregistrée pour cet athlète.</p>
+                    {(user?.role === "local_contact" || user?.role === "administrator") && (
+                      <Button asChild>
+                        <Link href={`/athletes/${athleteId}/evaluate`}>
+                          <Star className="h-4 w-4 mr-2" />
+                          Pré-évaluation MA (tronc commun)
+                        </Link>
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ) : (
-                <>
-                  {/* Dernière évaluation - Détails */}
-                  {evaluations[0] && (
-                    <Card>
+                <div className="space-y-6">
+                  {evaluations.map((ev) => (
+                    <Card key={ev.id}>
                       <CardHeader>
-                        <CardTitle>Dernière Évaluation</CardTitle>
+                        <CardTitle className="flex flex-wrap items-center gap-2 justify-between">
+                          <span>
+                            {ev.kind === "ma_pre" ? "Pré-évaluation MA" : "Évaluation fédérale"}
+                          </span>
+                          <Badge variant={ev.kind === "ma_pre" ? "outline" : "secondary"}>
+                            {ev.kind === "ma_pre" ? `${ev.totalScore} / 28` : `${ev.totalScore} / 60`}
+                          </Badge>
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(evaluations[0].createdAt).toLocaleDateString("fr-FR", {
+                          {new Date(ev.createdAt).toLocaleDateString("fr-FR", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
-                          })}
+                          })}{" "}
+                          — {ev.evaluatorName}
                         </p>
                       </CardHeader>
-                      <CardContent className="space-y-6">
-                        {/* Score global */}
-                        <div className="text-center p-4 bg-muted/30 rounded-lg">
-                          <div className="text-4xl font-bold text-primary mb-2">
-                            {evaluations[0].globalScore.toFixed(1)}%
-                          </div>
-                          <div className="text-lg font-semibold mb-1">{evaluations[0].scoreLabel}</div>
-                          <div className="text-sm text-muted-foreground">
-                            Potentiel: {evaluations[0].potential}
-                          </div>
-                        </div>
-
-                        {/* Domaines d'évaluation */}
-                        <div className="space-y-4">
-                          <h3 className="font-semibold">Domaines évalués</h3>
-                          <div className="grid gap-4 md:grid-cols-2">
-                            {[
-                              { key: "physique", label: "Qualités physiques spécifiques" },
-                              { key: "technique", label: "Qualités techniques spécifiques" },
-                              { key: "garde", label: "Posture et position de garde" },
-                              { key: "motivation", label: "Aspect motivationnel (détermination)" },
-                              { key: "main", label: "Qualités techniques de main" },
-                              { key: "mobilite", label: "Mobilité spécifique" },
-                              { key: "cognitif", label: "Capacités cognitives en escrime" },
-                            ].map(({ key, label }) => {
-                              const value = evaluations[0][key as keyof typeof evaluations[0]] as number;
-                              const scaleLabels = [
-                                "À développer",
-                                "En cours de développement",
-                                "En voie de maîtrise",
-                                "Maîtrise (point fort)",
-                              ];
-                              return (
-                                <div key={key} className="space-y-2">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium">{label}</span>
-                                    <Badge variant="outline">{value}/4</Badge>
-                                  </div>
-                                  <Progress value={(value / 4) * 100} className="h-2" />
-                                  <p className="text-xs text-muted-foreground">
-                                    {scaleLabels[value - 1]}
-                                  </p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Bilan */}
-                        {evaluations[0].bilan && (
-                          <div className="space-y-2">
-                            <h3 className="font-semibold">Bilan individuel général</h3>
-                            <div className="p-4 bg-muted/20 rounded-lg text-sm whitespace-pre-wrap">
-                              {evaluations[0].bilan}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Métadonnées */}
-                        <div className="pt-4 border-t space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Évalué par:</span>
-                            <span className="font-medium">{evaluations[0].evaluatorName}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Rôle:</span>
-                            <span className="font-medium capitalize">{evaluations[0].evaluatorRole}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Historique des évaluations */}
-                  {evaluations.length > 1 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Historique des Évaluations</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {evaluations.length} évaluation{evaluations.length > 1 ? "s" : ""} au total
-                        </p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {evaluations.map((evalItem) => (
-                            <div
-                              key={evalItem.id}
-                              className="p-4 bg-muted/20 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-medium mb-1">
-                                    Évaluation du{" "}
-                                    {new Date(evalItem.createdAt).toLocaleDateString("fr-FR", {
-                                      day: "numeric",
-                                      month: "long",
-                                      year: "numeric",
-                                    })}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mb-2">
-                                    Potentiel: {evalItem.potential}
-                                  </div>
-                                  {evalItem.bilan && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                                      {evalItem.bilan}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="text-right ml-4">
-                                  <div className="font-bold text-primary text-xl mb-1">
-                                    {evalItem.globalScore.toFixed(1)}%
-                                  </div>
-                                  <Badge variant="secondary" className="mb-2">
-                                    {evalItem.scoreLabel}
-                                  </Badge>
-                                  <div className="text-xs text-muted-foreground">
-                                    {evalItem.evaluatorName}
-                                  </div>
-                                </div>
-                              </div>
+                      <CardContent className="space-y-4">
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {TRONC_COMMUN_ITEMS.map(({ key, code, label }) => (
+                            <div key={key} className="flex justify-between text-sm border-b pb-1">
+                              <span>
+                                {code} — {label}
+                              </span>
+                              <span className="font-medium">{ev.tc[key]}</span>
                             </div>
                           ))}
                         </div>
+                        {ev.kind === "federal" && ev.s && (
+                          <div className="grid gap-2 md:grid-cols-2 pt-2 border-t">
+                            {SABRE_SPECIFIC_ITEMS.map(({ key, code, label }) => (
+                              <div key={key} className="flex justify-between text-sm border-b pb-1">
+                                <span>
+                                  {code} — {label}
+                                </span>
+                                <span className="font-medium">{ev.s![key]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {ev.observations && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Observations</h4>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ev.observations}</p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
-                  )}
-                </>
+                  ))}
+                </div>
               )}
             </TabsContent>
 

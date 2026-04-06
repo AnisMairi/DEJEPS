@@ -1,0 +1,7 @@
+# Cloudflare Pages — export statique Next.js (dossier out/)
+# Déploiement CLI : pnpm run pages:deploy
+# Ou : Dashboard Pages → connecter Git, build = pnpm run build, répertoire = out
+# Doc : https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/
+
+name = "dejeps"
+compatibility_date = "2024-11-01"

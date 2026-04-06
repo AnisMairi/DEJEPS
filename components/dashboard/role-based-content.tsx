@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Users, Shield } from "lucide-react"
+import { Upload, Users, Shield, ClipboardCheck } from "lucide-react"
 import Link from "next/link"
 
 export function RoleBasedContent() {
@@ -68,6 +68,39 @@ export function RoleBasedContent() {
               <CardContent>
                 <p className="text-sm text-muted-foreground">18 vidéos en attente d'évaluation</p>
                 <p className="text-xs text-muted-foreground mt-1">Priorité haute : 5 talents prometteurs</p>
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case "federal_evaluator":
+        return (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5" />
+                  File d&apos;évaluation
+                </CardTitle>
+                <CardDescription>
+                  Accédez aux vidéos en pré-évaluation MA — notation en aveugle sur 15 items
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href="/evaluations/federal">Ouvrir les vidéos à évaluer</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Vidéos</CardTitle>
+                <CardDescription>Consultation des enregistrements publiés</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild>
+                  <Link href="/videos">Voir les vidéos</Link>
+                </Button>
               </CardContent>
             </Card>
           </div>

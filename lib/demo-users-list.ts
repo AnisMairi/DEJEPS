@@ -4,7 +4,7 @@ export interface DemoUserListItem {
   id: string | number
   name: string
   email: string
-  role: "local_contact" | "coach" | "administrator"
+  role: "local_contact" | "coach" | "administrator" | "federal_evaluator"
   status: "active" | "suspended" | "pending"
   joinDate?: string
   lastActive?: string
@@ -170,6 +170,23 @@ export const DEMO_USERS_LIST: DemoUserListItem[] = [
     avatar_url: "https://placehold.co/200x200?text=AM",
     last_login: null,
     created_at: "2024-01-10T10:00:00Z",
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "12",
+    name: "Évaluateur Fédéral",
+    email: "evaluateur@federation.fr",
+    role: "federal_evaluator",
+    status: "active",
+    joinDate: "2024-03-01",
+    lastActive: new Date().toISOString(),
+    videosUploaded: 0,
+    phone: "01 40 00 00 00",
+    club_name: "Commission fédérale de détection",
+    bio: "Cadre national — évaluation en aveugle des vidéos Sabre Talent.",
+    avatar_url: "https://placehold.co/200x200?text=EF",
+    last_login: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    created_at: "2024-03-01T10:00:00Z",
     updated_at: new Date().toISOString(),
   },
   {

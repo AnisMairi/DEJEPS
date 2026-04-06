@@ -6,7 +6,9 @@
     "build": "next build",
     "dev": "next dev --turbopack",
     "lint": "next lint",
-    "preview": "pnpm dlx serve out -p 3000"
+    "preview": "pnpm dlx serve out -p 3000 -c serve.json",
+    "start": "serve out -l tcp://0.0.0.0:3000 -c serve.json",
+    "pages:deploy": "pnpm run build && wrangler pages deploy out"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -59,11 +61,15 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
+    "serve": "^14.2.4",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.80.0"
   }
 }

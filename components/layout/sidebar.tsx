@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Home, Video, Users, MessageSquare, Shield, BarChart3, Upload, Bell, Star, FileText, Menu } from "lucide-react"
+import { Home, Video, Users, MessageSquare, Shield, BarChart3, Upload, Bell, Star, ClipboardCheck, FileText, Menu } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -23,19 +23,19 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       name: "Dashboard",
       href: "/dashboard",
       icon: Home,
-      roles: ["local_contact", "coach", "administrator"],
+      roles: ["local_contact", "coach", "administrator", "federal_evaluator"],
     },
     {
       name: "Videos",
       href: "/videos",
       icon: Video,
-      roles: ["local_contact", "coach", "administrator"],
+      roles: ["local_contact", "coach", "administrator", "federal_evaluator"],
     },
     {
       name: "Athletes",
       href: "/athletes",
       icon: Users,
-      roles: ["local_contact", "coach", "administrator"],
+      roles: ["local_contact", "coach", "administrator", "federal_evaluator"],
     },
     /*
     {
@@ -49,8 +49,14 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       name: "Notifications",
       href: "/notifications",
       icon: Bell,
-      roles: ["local_contact", "coach", "administrator"],
+      roles: ["local_contact", "coach", "administrator", "federal_evaluator"],
       badge: "3", // Mock unread count
+    },
+    {
+      name: "Évaluation fédérale",
+      href: "/evaluations/federal",
+      icon: ClipboardCheck,
+      roles: ["federal_evaluator", "administrator"],
     },
     {
       name: "Évaluations",

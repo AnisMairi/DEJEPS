@@ -46,7 +46,7 @@ interface User {
   id: string | number
   name: string
   email: string
-  role: "local_contact" | "coach" | "administrator"
+  role: "local_contact" | "coach" | "administrator" | "federal_evaluator"
   status: "active" | "suspended" | "pending"
   joinDate?: string
   lastActive?: string
@@ -177,7 +177,27 @@ export function AdminManagementInterface() {
         })
         setVideos(transformedVideos)
       })
-      .catch(() => setVideos([]))
+      .catch(async () => {
+        try {
+          const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
+          setVideos(
+            DEMO_VIDEOS.map((v) => ({
+              id: v.id,
+              title: v.title,
+              athlete: v.athlete,
+              uploader: v.uploader,
+              uploadDate: v.uploadedAt,
+              status: "published" as const,
+              views: v.views,
+              comments: v.comments,
+              reports: 0,
+              rawVideo: v,
+            }))
+          )
+        } catch {
+          setVideos([])
+        }
+      })
       .finally(() => setLoadingVideos(false))
 
     // Load comments immediately for stats
@@ -319,10 +339,26 @@ export function AdminManagementInterface() {
           })
           setVideos(transformedVideos)
         })
-        .catch((error) => {
-          console.error('Error loading videos:', error)
-          // Don't set error message for empty results, let the UI handle it
-          setVideos([])
+        .catch(async (error) => {
+          console.error("Error loading videos:", error)
+          try {
+            const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
+            const transformedVideos = DEMO_VIDEOS.map((v) => ({
+              id: v.id,
+              title: v.title,
+              athlete: v.athlete,
+              uploader: v.uploader,
+              uploadDate: v.uploadedAt,
+              status: "published" as const,
+              views: v.views,
+              comments: v.comments,
+              reports: 0,
+              rawVideo: v,
+            }))
+            setVideos(transformedVideos)
+          } catch {
+            setVideos([])
+          }
         })
         .finally(() => setLoadingVideos(false))
     }
@@ -505,6 +541,8 @@ export function AdminManagementInterface() {
         return "bg-blue-100 text-blue-800"
       case "local_contact":
         return "bg-green-100 text-green-800"
+      case "federal_evaluator":
+        return "bg-amber-100 text-amber-900"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -699,6 +737,7 @@ export function AdminManagementInterface() {
                         <SelectItem value="all">Tous les rôles</SelectItem>
                         <SelectItem value="local_contact">Contact local</SelectItem>
                         <SelectItem value="coach">Coach</SelectItem>
+                        <SelectItem value="federal_evaluator">Évaluateur fédéral</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -813,7 +852,9 @@ export function AdminManagementInterface() {
                             ? "Contact Local"
                             : user.role === "coach"
                               ? "Entraîneur"
-                              : "Administrateur"}
+                              : user.role === "federal_evaluator"
+                                ? "Évaluateur fédéral"
+                                : "Administrateur"}
                         </Badge>
                       </TableCell>
                       <TableCell>
