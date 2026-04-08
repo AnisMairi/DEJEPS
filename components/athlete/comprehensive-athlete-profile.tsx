@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { buildRadarChartData, getPhysicalRecord } from "@/lib/demo-physical-tests"
 import { TRONC_COMMUN_ITEMS, SABRE_SPECIFIC_ITEMS } from "@/lib/sabre-evaluation-constants"
 import type { DemoEvaluation } from "@/lib/demo-evaluations"
+import { computeAge, fencingCategoryFromDob } from "@/lib/fencing-age-category"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -335,24 +336,16 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
   ];
 
   // When mapping athlete data, use fakeStats and fakePerformanceHistory as fallback
-  // Calculate age from date_of_birth
-  let age = 0;
-  if (athlete?.date_of_birth) {
-    const today = new Date();
-    const birthDate = new Date(athlete.date_of_birth);
-    age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-  }
+  const age = athlete?.date_of_birth ? computeAge(athlete.date_of_birth) ?? 0 : 0
+  const derivedCategory = athlete?.date_of_birth ? fencingCategoryFromDob(athlete.date_of_birth) : null
+
   const mappedAthlete = {
     id: athlete?.id || "N/A",
     firstName: athlete?.first_name || "John",
     lastName: athlete?.last_name || "Doe",
     age: age || 25, // Use calculated age or fallback
     gender: athlete?.gender || "Homme",
-    ageCategory: (athlete as { age_category?: string })?.age_category,
+    ageCategory: derivedCategory ?? (athlete as { age_category?: string })?.age_category,
     weapon: athlete?.weapon || "Sabre",
     skillLevel: athlete?.skill_level || "Intermédiaire",
     avatar: athlete?.avatar_url || "https://placehold.co/200x200?text=Athlete",
@@ -410,6 +403,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     gender: athlete.gender as "male" | "female",
   })
   const physRec = getPhysicalRecord(athleteId)
+  const hasNationalCampPhysicalTests = Boolean(physRec.session1 || physRec.session2)
 
   return (
     <div className="space-y-6">
@@ -428,11 +422,11 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
               </Link>
             </Button>
           )}
-          {(user?.role === "coach" || user?.role === "administrator") && (
+          {user?.role === "administrator" && (
             <Button variant="outline" asChild>
               <Link href={`/athletes/${mappedAthlete.id}/physical-tests`}>
                 <Activity className="h-4 w-4 mr-2" />
-                Tests physiques
+                Saisie tests physiques (stage)
               </Link>
             </Button>
           )}
@@ -677,7 +671,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                 <CardContent className="space-y-6">
                   <p className="text-sm text-muted-foreground">
                     Les barèmes normalisent chaque test sur une échelle 0–100 pour superposer juillet et Toussaint sur le
-                    radar (Coach Principal saisit les résultats).
+                    radar (saisie réservée au staff du stage national — administrateur).
                   </p>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
                     <div className="rounded-lg border p-4 space-y-2">
@@ -690,7 +684,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                           <li>Sprint 10 m : {physRec.session1.sprint10Seconds ?? "—"} s</li>
                         </ul>
                       ) : (
-                        <p className="text-muted-foreground">En attente du stage national</p>
+                        <p className="text-muted-foreground">En attente — stage national juillet</p>
                       )}
                     </div>
                     <div className="rounded-lg border p-4 space-y-2">
@@ -703,34 +697,40 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                           <li>Sprint 10 m : {physRec.session2.sprint10Seconds ?? "—"} s</li>
                         </ul>
                       ) : (
-                        <p className="text-muted-foreground">En attente du stage national</p>
+                        <p className="text-muted-foreground">En attente — stage national Toussaint</p>
                       )}
                     </div>
                   </div>
-                  <ResponsiveContainer width="100%" height={340}>
-                    <RadarChart data={physicalRadar}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="subject" />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                      <Radar
-                        name="Juillet"
-                        dataKey="juillet"
-                        stroke="#2563eb"
-                        fill="#2563eb"
-                        fillOpacity={0.2}
-                        connectNulls
-                      />
-                      <Radar
-                        name="Toussaint"
-                        dataKey="toussaint"
-                        stroke="#ea580c"
-                        fill="#ea580c"
-                        fillOpacity={0.2}
-                        connectNulls
-                      />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  {hasNationalCampPhysicalTests ? (
+                    <ResponsiveContainer width="100%" height={340}>
+                      <RadarChart data={physicalRadar}>
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="subject" />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                        <Radar
+                          name="Juillet"
+                          dataKey="juillet"
+                          stroke="#2563eb"
+                          fill="#2563eb"
+                          fillOpacity={0.2}
+                          connectNulls
+                        />
+                        <Radar
+                          name="Toussaint"
+                          dataKey="toussaint"
+                          stroke="#ea580c"
+                          fill="#ea580c"
+                          fillOpacity={0.2}
+                          connectNulls
+                        />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+                      Indisponible — en attente des résultats des stages nationaux (juillet et/ou Toussaint).
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

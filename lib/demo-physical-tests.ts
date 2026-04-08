@@ -1,6 +1,7 @@
 // Tests physiques — stage juillet / Toussaint (mode démo)
 
 import type { DemoAthlete } from "@/lib/demo-athletes"
+import { fencingCategoryFromDob } from "@/lib/fencing-age-category"
 
 const STORAGE_KEY = "sabre_demo_physical_tests_v1"
 
@@ -31,12 +32,8 @@ function zoneFromScore100(n: number): PerformanceZone {
 
 /** Catégorie d'âge projet Sabre Talent (M13 / M15) à partir de la date de naissance */
 export function getAgeCategoryFromBirthDate(dateOfBirth: string): AgeCategory {
-  const birth = new Date(dateOfBirth)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return age <= 13 ? "M13" : "M15"
+  const derived = fencingCategoryFromDob(dateOfBirth)
+  return derived === "M13" ? "M13" : "M15"
 }
 
 /** Barèmes : retourne une valeur 0–100 pour le radar (plus haut = meilleure performance) */
@@ -177,6 +174,8 @@ export function buildRadarChartData(
   athlete: Pick<DemoAthlete, "id" | "date_of_birth" | "gender">
 ): { subject: string; juillet: number | null; toussaint: number | null }[] {
   const rec = getPhysicalRecord(athlete.id)
+  // Business rule: n'afficher que si les tests ont été réalisés pendant un stage national (juillet ou Toussaint).
+  if (!rec.session1 && !rec.session2) return []
   const age = getAgeCategoryFromBirthDate(athlete.date_of_birth)
   const sex = athlete.gender
   const axes: { key: keyof PhysicalSessionResults; label: string; test: "sfcodt" | "cmj" | "yoyo" | "sprint10" }[] = [
@@ -185,7 +184,10 @@ export function buildRadarChartData(
     { key: "yoyoMeters", label: "Yo-Yo IR1", test: "yoyo" },
     { key: "sprint10Seconds", label: "Sprint 10 m", test: "sprint10" },
   ]
-  return axes.map(({ key, label, test }) => {
+  // Business rule: exclure les tests de fente (aucun dans ce set, mais on garde une garde-fou).
+  const filteredAxes = axes.filter((a) => !/fente|lunge/i.test(a.label))
+
+  return filteredAxes.map(({ key, label, test }) => {
     const v1 = rec.session1?.[key]
     const v2 = rec.session2?.[key]
     return {

@@ -14,6 +14,7 @@ import {
   getEvaluations,
   deleteEvaluation,
   getPanelStatusForEvaluation,
+  getFederalFinalScore,
   type DemoEvaluation,
   type PanelEvaluationStatus,
 } from "@/lib/demo-evaluations"
@@ -27,6 +28,10 @@ function statusBadge(status: PanelEvaluationStatus) {
     EN_ATTENTE_DE_VALIDATION: {
       label: "EN ATTENTE DE VALIDATION",
       className: "bg-amber-400/90 text-amber-950 hover:bg-amber-400",
+    },
+    EN_ATTENTE_2E_LECTURE_FÉDÉRALE: {
+      label: "EN ATTENTE — 2E LECTURE FÉDÉRALE",
+      className: "bg-sky-600 text-white hover:bg-sky-600",
     },
     VALIDÉE: { label: "VALIDÉE", className: "bg-emerald-600 text-white hover:bg-emerald-600" },
     DISCORDANCE: {
@@ -108,8 +113,9 @@ export default function EvaluationsPage() {
           <div>
             <h1 className="text-3xl font-bold">Panel des évaluations</h1>
             <p className="text-muted-foreground">
-              Pré-évaluations maîtres d&apos;armes (/28) et grilles fédérales (/60). La discordance compare uniquement
-              deux scores fédéraux sur 60 (seuil : écart &gt; 6 points).
+              Pré-évaluations maîtres d&apos;armes (/28, EN ATTENTE) et lectures fédérales (/60). La discordance ne compare
+              que les scores fédéraux entre eux (écart &gt; 6 → 3e lecture, note finale = médiane des 3). On ne compare
+              jamais /28 et /60.
             </p>
           </div>
 
@@ -141,7 +147,8 @@ export default function EvaluationsPage() {
                       <TableHead>Athlète</TableHead>
                       <TableHead>Vidéo</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Score</TableHead>
+                      <TableHead>Score (lecture)</TableHead>
+                      <TableHead>Note finale (fédéral)</TableHead>
                       <TableHead>Statut</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead />
@@ -155,6 +162,8 @@ export default function EvaluationsPage() {
                       const status = getPanelStatusForEvaluation(e, rows)
                       const scoreLabel =
                         e.kind === "ma_pre" ? `${e.totalScore} / 28` : `${e.totalScore} / 60`
+                      const finalFed =
+                        e.kind === "federal" ? getFederalFinalScore(e.athleteId, e.videoId) : null
                       return (
                         <TableRow key={e.id}>
                           <TableCell className="font-medium">{name}</TableCell>
@@ -167,6 +176,13 @@ export default function EvaluationsPage() {
                             )}
                           </TableCell>
                           <TableCell className="tabular-nums font-semibold">{scoreLabel}</TableCell>
+                          <TableCell className="tabular-nums text-sm text-muted-foreground">
+                            {e.kind === "federal" && finalFed != null
+                              ? `${Math.round(finalFed * 10) / 10} / 60`
+                              : e.kind === "federal"
+                                ? "—"
+                                : "—"}
+                          </TableCell>
                           <TableCell>{statusBadge(status)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(e.createdAt).toLocaleString("fr-FR")}

@@ -9,6 +9,12 @@ import {
   sumTc,
 } from "@/lib/sabre-evaluation-constants"
 
+function medianScores(scores: number[]): number {
+  const s = [...scores].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2
+}
+
 const STORAGE_KEY = "sabre_demo_evaluations_v1"
 
 export type EvaluationKind = "ma_pre" | "federal"
@@ -16,6 +22,7 @@ export type EvaluationKind = "ma_pre" | "federal"
 /** Statut affiché dans le panel (ligne d'évaluation) */
 export type PanelEvaluationStatus =
   | "EN_ATTENTE_DE_VALIDATION"
+  | "EN_ATTENTE_2E_LECTURE_FÉDÉRALE"
   | "VALIDÉE"
   | "DISCORDANCE"
   | "DISCORDANCE_RESOLUE"
@@ -123,43 +130,56 @@ export function getFederalEvaluationsForAthlete(athleteId: string, videoId?: str
 }
 
 /**
+ * Statut agrégé pour une vidéo (toutes lectures fédérales /60).
+ * On ne compare jamais la pré-éval MA (/28) aux notes fédérales.
+ */
+export function getFederalAggregateStatus(athleteId: string, videoId: string): PanelEvaluationStatus {
+  const federal = getFederalEvaluationsForAthlete(athleteId, videoId)
+  const scores = federal.map((x) => x.totalScore)
+  if (scores.length === 0) return "VALIDÉE"
+  if (scores.length === 1) return "EN_ATTENTE_2E_LECTURE_FÉDÉRALE"
+  if (scores.length === 2) {
+    const diff = Math.abs(scores[0] - scores[1])
+    return diff > DISCORDANCE_THRESHOLD ? "DISCORDANCE" : "VALIDÉE"
+  }
+  const diff12 = Math.abs(scores[0] - scores[1])
+  if (diff12 > DISCORDANCE_THRESHOLD) return "DISCORDANCE_RESOLUE"
+  return "VALIDÉE"
+}
+
+/**
+ * Note finale fédérale : moyenne des 2 si écart ≤ 6 ; si discordance, médiane des 3 après 3e lecture.
+ */
+export function getFederalFinalScore(athleteId: string, videoId: string): number | null {
+  const federal = getFederalEvaluationsForAthlete(athleteId, videoId)
+  const scores = federal.map((x) => x.totalScore)
+  if (scores.length < 2) return null
+  if (scores.length === 2) {
+    const diff = Math.abs(scores[0] - scores[1])
+    if (diff > DISCORDANCE_THRESHOLD) return null
+    return (scores[0] + scores[1]) / 2
+  }
+  const diff12 = Math.abs(scores[0] - scores[1])
+  if (diff12 > DISCORDANCE_THRESHOLD) return medianScores(scores)
+  return (scores[0] + scores[1]) / 2
+}
+
+/**
  * Retourne le statut d'affichage pour une ligne d'évaluation.
  * La discordance ne compare que les scores fédéraux /60 entre eux.
  */
-export function getPanelStatusForEvaluation(e: DemoEvaluation, all: DemoEvaluation[]): PanelEvaluationStatus {
+export function getPanelStatusForEvaluation(e: DemoEvaluation, _all: DemoEvaluation[]): PanelEvaluationStatus {
   if (e.kind === "ma_pre") {
     return "EN_ATTENTE_DE_VALIDATION"
   }
-
-  const federal = getFederalEvaluationsForAthlete(e.athleteId, e.videoId)
-  const scores = federal.map((x) => x.totalScore)
-  if (scores.length === 1) {
-    return "VALIDÉE"
-  }
-
-  if (scores.length === 2) {
-    const diff = Math.abs(scores[0] - scores[1])
-    if (diff > DISCORDANCE_THRESHOLD) return "DISCORDANCE"
-    return "VALIDÉE"
-  }
-
-  // 3+ lectures fédérales : médiane résout la discordance
-  const firstTwo = scores.slice(0, 2)
-  const diff12 = Math.abs(firstTwo[0] - firstTwo[1])
-  if (diff12 > DISCORDANCE_THRESHOLD) {
-    return "DISCORDANCE_RESOLUE"
-  }
-  return "VALIDÉE"
+  return getFederalAggregateStatus(e.athleteId, e.videoId)
 }
 
 export function getFederalMedianScore(athleteId: string, videoId: string): number | null {
   const federal = getFederalEvaluationsForAthlete(athleteId, videoId)
   const scores = federal.map((x) => x.totalScore)
   if (scores.length === 0) return null
-  const sorted = [...scores].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  if (sorted.length % 2 === 1) return sorted[mid]
-  return (sorted[mid - 1] + sorted[mid]) / 2
+  return medianScores(scores)
 }
 
 export function assertCompleteTc(tc: Record<TCKey, number>): boolean {
