@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Save } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
-import { saveEvaluation, assertCompleteFederal } from "@/lib/demo-evaluations"
+import {
+  saveEvaluation,
+  assertCompleteFederal,
+  getFederalAggregateStatus,
+  getFederalFinalScore,
+} from "@/lib/demo-evaluations"
+import { sabreTalentFederalBlindCategory } from "@/lib/fencing-age-category"
 import {
   LIKERT_4_LABELS,
   TRONC_COMMUN_ITEMS,
@@ -23,7 +29,22 @@ import {
 import { DEMO_VIDEOS } from "@/lib/demo-videos"
 import { DEMO_ATHLETES } from "@/lib/demo-athletes"
 
-export function FederalBlindForm({ videoId }: { videoId: string }) {
+function anonVideoCode(videoId: string) {
+  const n = Number(videoId)
+  if (!Number.isFinite(n)) return `VID-${videoId}`
+  return `VID-${String(n).padStart(4, "0")}`
+}
+
+export function FederalBlindForm({
+  videoId,
+  blindMode = false,
+  athleteIdHint,
+}: {
+  videoId: string
+  /** Évaluateur fédéral : masquage strict (copies anonymes) — uniquement vidéo + M13/M15 + grille */
+  blindMode?: boolean
+  athleteIdHint?: string
+}) {
   const { toast } = useToast()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -36,13 +57,20 @@ export function FederalBlindForm({ videoId }: { videoId: string }) {
   useEffect(() => {
     const v = DEMO_VIDEOS.find((x) => x.id === videoId)
     if (!v) return
-    setAgeLabel(v.ageCategory === "M15" ? "M15" : "M13")
+    const hint = athleteIdHint?.trim()
+    const byHint = hint ? DEMO_ATHLETES.find((x) => x.id === hint) : undefined
+    if (byHint) {
+      setAthleteId(byHint.id)
+      setAgeLabel(sabreTalentFederalBlindCategory(byHint.date_of_birth))
+      return
+    }
+
     const name = v.athlete.split(/\s+vs\s+/i)[0].trim()
-    const a = DEMO_ATHLETES.find(
-      (x) => `${x.first_name} ${x.last_name}` === name || name.includes(x.first_name)
-    )
-    if (a) setAthleteId(a.id)
-  }, [videoId])
+    const a = DEMO_ATHLETES.find((x) => `${x.first_name} ${x.last_name}` === name || name.includes(x.first_name))
+    if (!a) return
+    setAthleteId(a.id)
+    setAgeLabel(sabreTalentFederalBlindCategory(a.date_of_birth))
+  }, [videoId, athleteIdHint])
 
   const total = sumFederal(tc, s)
 
@@ -75,9 +103,21 @@ export function FederalBlindForm({ videoId }: { videoId: string }) {
         s,
         observations,
       })
+      const agg = getFederalAggregateStatus(athleteId, videoId)
+      const finalNote = getFederalFinalScore(athleteId, videoId)
+      const statusLine =
+        agg === "DISCORDANCE"
+          ? "Discordance entre les 2 premières lectures — 3e lecture requise."
+          : agg === "EN_ATTENTE_2E_LECTURE_FÉDÉRALE"
+            ? "En attente de la 2e lecture fédérale indépendante."
+            : agg === "DISCORDANCE_RESOLUE"
+              ? `Discordance résolue — note finale (médiane) : ${finalNote != null ? `${Math.round(finalNote * 10) / 10} / 60` : "—"}`
+              : finalNote != null
+                ? `Note finale (moyenne des 2 lectures) : ${Math.round(finalNote * 10) / 10} / 60`
+                : "Lectures fédérales en cours."
       toast({
         title: "Évaluation enregistrée",
-        description: `Statut : VALIDÉE — Score ${total} / 60`,
+        description: `Cette lecture : ${total} / 60 — ${statusLine}`,
       })
     } catch {
       toast({ title: "Erreur", variant: "destructive" })
@@ -92,14 +132,18 @@ export function FederalBlindForm({ videoId }: { videoId: string }) {
     return <p className="text-muted-foreground">Vidéo inconnue.</p>
   }
 
+  const hideIdentifiers = blindMode || user?.role === "federal_evaluator"
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-2xl font-bold">Évaluation fédérale (aveugle)</h2>
-        <Badge variant="secondary">Âge : {ageLabel}</Badge>
+        <Badge variant="secondary">Catégorie : {ageLabel}</Badge>
       </div>
       <p className="text-sm text-muted-foreground">
-        Aucune information sur le club, la région ou la pré-évaluation du MA n&apos;est affichée.
+        {hideIdentifiers
+          ? "Affichage réservé : vidéo, catégorie Sabre Talent (M13 ou M15) et grille /60 — sans nom, club, région, ni pré-évaluation MA."
+          : "Mode administrateur / démo : titre de vidéo visible. L’évaluateur fédéral ne voit pas ces éléments identifiants."}
       </p>
 
       <Card>
@@ -108,7 +152,7 @@ export function FederalBlindForm({ videoId }: { videoId: string }) {
           <CardDescription>Lecture seule — contexte minimal.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="font-medium">{video.title}</p>
+          <p className="font-medium">{hideIdentifiers ? `Vidéo ${anonVideoCode(video.id)}` : video.title}</p>
           <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-sm">
             Lecteur vidéo (démo) — fichier joint sur la plateforme
           </div>

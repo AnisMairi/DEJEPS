@@ -74,13 +74,13 @@ export default function PhysicalTestsPage({ params }: { params: Promise<{ id: st
   ]
 
   return (
-    <ProtectedRoute allowedRoles={["coach", "administrator"]}>
+    <ProtectedRoute allowedRoles={["administrator"]}>
       <Layout>
         <div className="space-y-6 max-w-3xl">
           <div>
             <h1 className="text-3xl font-bold">Tests physiques (stage national)</h1>
             <p className="text-muted-foreground">
-              Saisie réservée au staff du stage (Coach Principal) — {athleteName || "…"}
+              Saisie réservée au staff du stage national (prototype : profil Administrateur uniquement) — {athleteName || "…"}
             </p>
           </div>
 

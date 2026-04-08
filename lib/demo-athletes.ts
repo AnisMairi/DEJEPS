@@ -1,4 +1,6 @@
-// Données de démo — Sabre Talent (M13 / M15, sabre)
+// Données de démo — Sabre Talent (catégories d'âge cohérentes, sabre)
+
+import type { FencingAgeCategory } from "@/lib/fencing-age-category"
 
 export interface DemoAthlete {
   id: string
@@ -8,7 +10,7 @@ export interface DemoAthlete {
   gender: "male" | "female"
   weapon: "foil" | "sabre" | "epee" | "épée"
   /** Catégorie projet Sabre Talent */
-  age_category: "M13" | "M15"
+  age_category: FencingAgeCategory
   skill_level: "beginner" | "intermediate" | "advanced" | "elite"
   avatar_url?: string
   videos_count: number
@@ -61,7 +63,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2010-11-20",
     gender: "male",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M17",
     skill_level: "advanced",
     avatar_url: "https://placehold.co/200x200?text=NL",
     videos_count: 11,
@@ -78,7 +80,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2010-03-07",
     gender: "female",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M17",
     skill_level: "intermediate",
     avatar_url: "https://placehold.co/200x200?text=CM",
     videos_count: 5,
@@ -112,7 +114,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2009-07-30",
     gender: "female",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M20",
     skill_level: "elite",
     avatar_url: "https://placehold.co/200x200?text=SO",
     videos_count: 14,
@@ -146,7 +148,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2010-05-22",
     gender: "female",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M17",
     skill_level: "advanced",
     avatar_url: "https://placehold.co/200x200?text=EF",
     videos_count: 8,
@@ -197,7 +199,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2009-10-03",
     gender: "male",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M20",
     skill_level: "advanced",
     avatar_url: "https://placehold.co/200x200?text=AK",
     videos_count: 10,
@@ -214,7 +216,7 @@ export const DEMO_ATHLETES: DemoAthlete[] = [
     date_of_birth: "2010-01-28",
     gender: "female",
     weapon: "sabre",
-    age_category: "M15",
+    age_category: "M17",
     skill_level: "elite",
     avatar_url: "https://placehold.co/200x200?text=LH",
     videos_count: 12,

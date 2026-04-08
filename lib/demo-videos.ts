@@ -1,4 +1,6 @@
-// Vidéos de démo — alignées sur les athlètes M13/M15 sabre
+// Vidéos de démo — alignées sur les athlètes (catégories cohérentes)
+
+import type { FencingAgeCategory } from "@/lib/fencing-age-category"
 
 export interface DemoVideo {
   id: string
@@ -16,7 +18,7 @@ export interface DemoVideo {
   category?: string
   age?: number
   /** M13 ou M15 — affiché à l'évaluateur fédéral en aveugle */
-  ageCategory: "M13" | "M15"
+  ageCategory: FencingAgeCategory
   club?: string
   department?: string
   region?: string
@@ -76,9 +78,9 @@ export const DEMO_VIDEOS: DemoVideo[] = [
     weapon_type: "sabre",
     competition_name: "Coupe de France cadets",
     competition_date: "2026-01-11",
-    category: "M15",
+    category: "M17",
     age: 15,
-    ageCategory: "M15",
+    ageCategory: "M17",
     club: "AS Escrime Toulouse",
     department: "31",
     region: "Occitanie",
@@ -96,9 +98,9 @@ export const DEMO_VIDEOS: DemoVideo[] = [
     weapon_type: "sabre",
     competition_name: "Championnat régional PACA",
     competition_date: "2026-01-10",
-    category: "M15",
+    category: "M17",
     age: 15,
-    ageCategory: "M15",
+    ageCategory: "M17",
     club: "Cercle d'Escrime Aix-en-Provence",
     department: "13",
     region: "Provence-Alpes-Côte d'Azur",
@@ -136,9 +138,9 @@ export const DEMO_VIDEOS: DemoVideo[] = [
     weapon_type: "sabre",
     competition_name: "Championnat Auvergne-Rhône-Alpes",
     competition_date: "2026-01-08",
-    category: "M15",
+    category: "M20",
     age: 16,
-    ageCategory: "M15",
+    ageCategory: "M20",
     club: "AS Escrime Lyon",
     department: "69",
     region: "Auvergne-Rhône-Alpes",
@@ -176,9 +178,9 @@ export const DEMO_VIDEOS: DemoVideo[] = [
     weapon_type: "sabre",
     competition_name: "Entraînement",
     competition_date: "2026-01-05",
-    category: "M15",
+    category: "M17",
     age: 15,
-    ageCategory: "M15",
+    ageCategory: "M17",
     club: "Caen Escrime",
     department: "14",
     region: "Normandie",
