@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { buildRadarChartData, getPhysicalRecord } from "@/lib/demo-physical-tests"
 import { TRONC_COMMUN_ITEMS, SABRE_SPECIFIC_ITEMS } from "@/lib/sabre-evaluation-constants"
 import type { DemoEvaluation } from "@/lib/demo-evaluations"
+import { getEvaluationsByAthleteId, initializeDemoFederalEvaluations } from "@/lib/demo-evaluations"
 import { computeAge, fencingCategoryFromDob } from "@/lib/fencing-age-category"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -115,6 +116,10 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
       try {
         setLoading(true);
         setError(null);
+        
+        // Initialiser les évaluations fédérales de démo
+        initializeDemoFederalEvaluations();
+        
         // Import dynamique pour éviter les erreurs de build
         const { DEMO_ATHLETES } = await import("@/lib/demo-athletes");
         const demoAthlete = DEMO_ATHLETES.find(a => a.id === athleteId);
@@ -397,6 +402,21 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     { subject: "Tactique", A: mappedAthlete.evaluations.tactics, fullMark: 10 },
   ]
 
+  // Get latest federal evaluation for Sabre Talent radars
+  const latestFederalEval = evaluations.find(e => e.kind === "federal")
+
+  const tcRadarData = latestFederalEval ? TRONC_COMMUN_ITEMS.map(item => ({
+    subject: item.code,
+    A: latestFederalEval.tc[item.key] || 1,
+    fullMark: 4
+  })) : []
+
+  const sabreRadarData = latestFederalEval?.s ? SABRE_SPECIFIC_ITEMS.map(item => ({
+    subject: item.code,
+    A: latestFederalEval.s[item.key] || 1,
+    fullMark: 4
+  })) : []
+
   const physicalRadar = buildRadarChartData({
     id: athleteId,
     date_of_birth: athlete.date_of_birth,
@@ -600,6 +620,45 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Sabre Talent Evaluation Radars */}
+              {latestFederalEval && (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Tronc Commun (TC)</CardTitle>
+                      <p className="text-sm text-muted-foreground">Évaluation fédérale - 7 compétences communes</p>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <RadarChart data={tcRadarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="subject" />
+                          <PolarRadiusAxis angle={90} domain={[0, 4]} />
+                          <Radar name="TC" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Spécifiques Sabre (S)</CardTitle>
+                      <p className="text-sm text-muted-foreground">Évaluation fédérale - 8 compétences sabre</p>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <RadarChart data={sabreRadarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="subject" />
+                          <PolarRadiusAxis angle={90} domain={[0, 4]} />
+                          <Radar name="S" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               {/* Recent Performance */}
               <Card>
