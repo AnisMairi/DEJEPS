@@ -414,7 +414,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
           <p className="text-muted-foreground">Suivi complet et analyse de performance</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(user?.role === "local_contact" || user?.role === "administrator") && (
+          {(user?.role === "coach" || user?.role === "local_contact" || user?.role === "administrator") && (
             <Button variant="outline" asChild>
               <Link href={`/athletes/${mappedAthlete.id}/evaluate`}>
                 <Star className="h-4 w-4 mr-2" />
