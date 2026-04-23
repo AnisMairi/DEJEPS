@@ -3,7 +3,6 @@ import { Layout } from "@/components/layout/layout"
 import { DashboardStats } from "@/components/dashboard/dashboard-stats"
 import { RoleBasedContent } from "@/components/dashboard/role-based-content"
 import { RecentVideosTable } from "@/components/dashboard/recent-videos-table"
-import { TopAthletes } from "@/components/dashboard/top-athletes"
 
 export default function DashboardPage() {
   return (
@@ -21,7 +20,6 @@ export default function DashboardPage() {
             <DashboardStats />
             <RoleBasedContent />
             <RecentVideosTable />
-            <TopAthletes />
           </div>
         </div>
       </Layout>

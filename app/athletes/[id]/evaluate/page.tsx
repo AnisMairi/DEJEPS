@@ -101,7 +101,7 @@ export default function AthleteEvaluationPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <ProtectedRoute allowedRoles={["local_contact", "administrator"]}>
+    <ProtectedRoute allowedRoles={["coach", "local_contact", "administrator"]}>
       <Layout>
         <div className="space-y-6 max-w-4xl">
           <div>

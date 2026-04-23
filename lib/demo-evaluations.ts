@@ -192,3 +192,64 @@ export function assertCompleteFederal(tc: Record<TCKey, number>, s: Record<SKey,
     SABRE_SPECIFIC_ITEMS.every(({ key }) => s[key] >= 1 && s[key] <= 4)
   )
 }
+
+/**
+ * Initialise les données de démo d'évaluations fédérales si elles n'existent pas
+ */
+export function initializeDemoFederalEvaluations() {
+  if (typeof window === "undefined") return
+  
+  const existing = getEvaluations()
+  
+  // Si des évaluations existent déjà, ne pas réinitialiser
+  if (existing.length > 0) return
+  
+  // Créer des évaluations fédérales de démo pour les athlètes 1 et 2
+  const demoEvals: DemoEvaluation[] = [
+    // Inès Benali (ID: 2) - Elite
+    {
+      id: `eval_demo_2_1_${Date.now()}`,
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 jours ago
+      kind: "federal",
+      athleteId: "2",
+      videoId: "1",
+      evaluatorName: "Dr. Laurent Dupont",
+      evaluatorRole: "evaluator",
+      tc: { tc1: 4, tc2: 4, tc3: 3, tc4: 4, tc5: 4, tc6: 4, tc7: 3 },
+      s: { s1: 4, s2: 3, s3: 4, s4: 3, s5: 4, s6: 4, s7: 3, s8: 4 },
+      observations: "Athlète prometteuse. Excellente lecture de jeu et détermination remarquable.",
+      totalScore: 58,
+    },
+    // Théo Renaud (ID: 1) - Advanced
+    {
+      id: `eval_demo_1_1_${Date.now()}`,
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 jours ago
+      kind: "federal",
+      athleteId: "1",
+      videoId: "1",
+      evaluatorName: "Dr. Laurent Dupont",
+      evaluatorRole: "evaluator",
+      tc: { tc1: 3, tc2: 3, tc3: 3, tc4: 3, tc5: 3, tc6: 3, tc7: 2 },
+      s: { s1: 3, s2: 2, s3: 3, s4: 2, s5: 3, s6: 3, s7: 2, s8: 2 },
+      observations: "Potentiel de développement intéressant. À travailler la gestion émotionnelle.",
+      totalScore: 41,
+    },
+    // Nathan Lefèvre (ID: 3) - Advanced
+    {
+      id: `eval_demo_3_1_${Date.now()}`,
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 jours ago
+      kind: "federal",
+      athleteId: "3",
+      videoId: "1",
+      evaluatorName: "Dr. Laurent Dupont",
+      evaluatorRole: "evaluator",
+      tc: { tc1: 3, tc2: 3, tc3: 3, tc4: 4, tc5: 3, tc6: 4, tc7: 3 },
+      s: { s1: 3, s2: 3, s3: 3, s4: 3, s5: 3, s6: 3, s7: 3, s8: 3 },
+      observations: "Bon équilibre technique. À développer les attaques composées.",
+      totalScore: 47,
+    },
+  ]
+  
+  // Persister les évaluations de démo
+  persist(demoEvals)
+}
