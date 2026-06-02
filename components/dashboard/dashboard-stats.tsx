@@ -1,26 +1,40 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LogIn, Users, Upload, TrendingUp } from "lucide-react"
+import { getDemoAthletes, getDemoVideos } from "@/lib/demo-local-store"
+import { getEvaluations, initializeDemoFederalEvaluations } from "@/lib/demo-evaluations"
 
 export function DashboardStats() {
+  const [counts, setCounts] = useState({ athletes: 0, videos: 0, evaluations: 0 })
+
+  useEffect(() => {
+    initializeDemoFederalEvaluations()
+    setCounts({
+      athletes: getDemoAthletes().length,
+      videos: getDemoVideos().length,
+      evaluations: getEvaluations().length,
+    })
+  }, [])
+
   const stats = [
     {
-      title: "Connexions Référants",
-      value: "142",
-      description: "Ce mois en cours",
+      title: "Athlètes suivis",
+      value: counts.athletes.toString(),
+      description: "Mock data + ajouts locaux",
       icon: LogIn,
     },
     {
-      title: "Coachs Actifs",
-      value: "89",
-      description: "Ce mois en cours",
+      title: "Évaluations",
+      value: counts.evaluations.toString(),
+      description: "Pré-évaluations et lectures fédérales",
       icon: Users,
     },
     {
       title: "Uploads de Vidéos",
-      value: "1,234",
-      description: "+18.5% vs mois dernier",
+      value: counts.videos.toString(),
+      description: "Mock data + vidéos locales",
       icon: Upload,
       trend: "+18.5%",
     },

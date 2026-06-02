@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -11,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { getDemoVideos } from "@/lib/demo-local-store"
 
 interface RecentVideo {
   id: string
@@ -26,80 +28,27 @@ interface RecentVideo {
 
 export function RecentVideosTable() {
   const router = useRouter()
+  const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([])
+
+  useEffect(() => {
+    setRecentVideos(
+      getDemoVideos().slice(0, 6).map((video) => ({
+        id: video.id,
+        competition: video.competition_name || video.title,
+        athleteName: video.athlete,
+        category: video.category || video.ageCategory || "M13",
+        weapon: video.weapon_type === "sabre" ? "Sabre" : video.weapon_type || "Sabre",
+        age: video.age || 13,
+        club: video.club || "-",
+        department: video.department || "-",
+        uploadedAt: video.competition_date || new Date().toISOString(),
+      })),
+    )
+  }, [])
 
   const handleRowClick = (video: RecentVideo) => {
-    router.push(`/videos/${video.id}`)
+    router.push(video.id.startsWith("local_video_") ? `/videos/watch?id=${encodeURIComponent(video.id)}` : `/videos/${video.id}`)
   }
-
-  // Données de démo pour les vidéos récentes
-  const recentVideos: RecentVideo[] = [
-    {
-      id: "1",
-      competition: "Open Nouvelle-Aquitaine M13 sabre",
-      athleteName: "Théo Renaud",
-      category: "M13",
-      weapon: "Sabre",
-      age: 13,
-      club: "Cercle d'Escrime de Bordeaux",
-      department: "33",
-      uploadedAt: "2026-01-13",
-    },
-    {
-      id: "2",
-      competition: "SCUF Paris — demi-finale M13",
-      athleteName: "Inès Benali",
-      category: "M13",
-      weapon: "Sabre",
-      age: 14,
-      club: "SCUF Paris",
-      department: "75",
-      uploadedAt: "2026-01-12",
-    },
-    {
-      id: "3",
-      competition: "Coupe cadets sabre",
-      athleteName: "Nathan Lefèvre",
-      category: "M15",
-      weapon: "Sabre",
-      age: 15,
-      club: "AS Escrime Toulouse",
-      department: "31",
-      uploadedAt: "2026-01-11",
-    },
-    {
-      id: "4",
-      competition: "Championnat PACA M15",
-      athleteName: "Chloé Marchand",
-      category: "M15",
-      weapon: "Sabre",
-      age: 15,
-      club: "Cercle d'Escrime Aix-en-Provence",
-      department: "13",
-      uploadedAt: "2026-01-10",
-    },
-    {
-      id: "5",
-      competition: "Tournoi Grand Est M13",
-      athleteName: "Louis Giraud",
-      category: "M13",
-      weapon: "Sabre",
-      age: 13,
-      club: "Cercle d'Escrime Strasbourg",
-      department: "67",
-      uploadedAt: "2026-01-09",
-    },
-    {
-      id: "6",
-      competition: "Finale M15 sabre Lyon",
-      athleteName: "Sarah Okonkwo",
-      category: "M15",
-      weapon: "Sabre",
-      age: 16,
-      club: "AS Escrime Lyon",
-      department: "69",
-      uploadedAt: "2026-01-08",
-    },
-  ]
 
   const getDepartmentName = (code: string) => {
     const departments: Record<string, string> = {
@@ -145,7 +94,7 @@ export function RecentVideosTable() {
           </TableHeader>
           <TableBody>
             {recentVideos.map((video) => (
-              <TableRow 
+              <TableRow
                 key={video.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => handleRowClick(video)}
@@ -172,4 +121,3 @@ export function RecentVideosTable() {
     </Card>
   )
 }
-

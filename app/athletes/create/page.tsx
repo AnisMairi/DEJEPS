@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Save, UserPlus, Upload, X, Camera } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
-import { useAthleteApi } from "@/hooks/use-athlete-api"
+import { saveLocalDemoAthlete, type ArmedHand } from "@/lib/demo-local-store"
 
 export default function CreateAthletePage() {
   const router = useRouter()
@@ -37,6 +37,8 @@ export default function CreateAthletePage() {
     club: "",
     coach: "",
     region: "",
+    committee: "",
+    armedHand: "" as ArmedHand | "",
     
     // Additional Information
     emergencyContact: "",
@@ -59,8 +61,6 @@ export default function CreateAthletePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const { createAthlete, uploadAthleteAvatar } = useAthleteApi();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -137,7 +137,7 @@ export default function CreateAthletePage() {
   }
 
   // Check if athlete is a minor (under 18)
-  const isMinor = formData.dateOfBirth ? calculateAge(formData.dateOfBirth) < 18 : false
+  const isMinor = false
 
   const handleTutorInputChange = (field: string, value: string) => {
     setTutorInfo(prev => ({
@@ -150,45 +150,23 @@ export default function CreateAthletePage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Map form fields to API schema
-      const athletePayload: any = {
+      saveLocalDemoAthlete({
         first_name: formData.firstName,
         last_name: formData.lastName,
         date_of_birth: formData.dateOfBirth,
-        gender: formData.gender,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        weapon: formData.weapon,
-        skill_level: formData.skillLevel,
+        gender: (formData.gender || "male") as "male" | "female",
+        weapon: (formData.weapon || "sabre") as "foil" | "sabre" | "epee" | "épée",
+        skill_level: (formData.skillLevel || "intermediate") as "beginner" | "intermediate" | "advanced" | "elite",
         club: formData.club || undefined,
         coach: formData.coach || undefined,
         region: formData.region || undefined,
-        emergency_contact: formData.emergencyContact || undefined,
-        emergency_phone: formData.emergencyPhone || undefined,
-        medical_notes: formData.medicalNotes || undefined,
-        notes: formData.notes || undefined,
-      };
-      // Add tutor info if minor
-      if (isMinor) {
-        athletePayload.tutor = {
-          first_name: tutorInfo.tutorFirstName,
-          last_name: tutorInfo.tutorLastName,
-          email: tutorInfo.tutorEmail,
-          phone: tutorInfo.tutorPhone,
-          tutor_relationship: tutorInfo.tutorRelationship,
-          address: tutorInfo.tutorAddress || undefined,
-          occupation: tutorInfo.tutorOccupation || undefined,
-        };
-      }
-      // Create athlete
-      const created = await createAthlete(athletePayload);
-      // Upload avatar if present
-      if (avatarFile && created?.id) {
-        await uploadAthleteAvatar(created.id, avatarFile);
-      }
+        committee: formData.committee || undefined,
+        armed_hand: formData.armedHand || undefined,
+        avatar_url: avatarPreview || undefined,
+      })
       toast({
         title: "Succès!",
-        description: "L'athlète a été ajouté avec succès.",
+        description: "L'athlète a été ajouté localement pour la démo.",
       });
       router.push("/athletes");
     } catch (error: any) {
@@ -414,22 +392,38 @@ export default function CreateAthletePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="region">Région</Label>
-                  <Select value={formData.region} onValueChange={(value) => handleInputChange("region", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner la région" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="paris">Paris</SelectItem>
-                      <SelectItem value="lyon">Lyon</SelectItem>
-                      <SelectItem value="marseille">Marseille</SelectItem>
-                      <SelectItem value="toulouse">Toulouse</SelectItem>
-                      <SelectItem value="bordeaux">Bordeaux</SelectItem>
-                      <SelectItem value="nice">Nice</SelectItem>
-                      <SelectItem value="other">Autre</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="committee">Comité *</Label>
+                    <Input
+                      id="committee"
+                      value={formData.committee}
+                      onChange={(e) => handleInputChange("committee", e.target.value)}
+                      placeholder="Comité régional"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="region">Région</Label>
+                    <Input
+                      id="region"
+                      value={formData.region}
+                      onChange={(e) => handleInputChange("region", e.target.value)}
+                      placeholder="Région"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="armedHand">Bras armé *</Label>
+                    <Select value={formData.armedHand} onValueChange={(value) => handleInputChange("armedHand", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bras armé" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Droitier">Droitier</SelectItem>
+                        <SelectItem value="Gaucher">Gaucher</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>

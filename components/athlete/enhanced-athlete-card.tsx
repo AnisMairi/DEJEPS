@@ -24,6 +24,10 @@ interface EnhancedAthleteCardProps {
 }
 
 export function EnhancedAthleteCard({ athlete }: EnhancedAthleteCardProps) {
+  const profileHref = athlete.id.startsWith("local_")
+    ? `/athletes/profile?id=${encodeURIComponent(athlete.id)}`
+    : `/athletes/${athlete.id}`
+
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:shadow-xl bg-card text-card-foreground">
       {/* Avatar Container */}
@@ -76,7 +80,7 @@ export function EnhancedAthleteCard({ athlete }: EnhancedAthleteCardProps) {
           className="w-full"
           variant="default"
         >
-          <Link href={`/athletes/${athlete.id}`}>
+          <Link href={profileHref}>
             <User className="h-4 w-4 mr-2" />
             View Profile
           </Link>

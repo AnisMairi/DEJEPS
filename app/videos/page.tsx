@@ -19,6 +19,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getDemoVideos } from "@/lib/demo-local-store"
 
 export default function VideosPage() {
   const [allVideos, setAllVideos] = useState<any[]>([])
@@ -44,24 +45,29 @@ export default function VideosPage() {
   // Memoize filters to avoid infinite loop
   const stableFilters = useMemo(() => filters, [JSON.stringify(filters)])
 
-  useEffect(() => {
-    // Mode démo : utiliser les données de démo au lieu de l'API
-    const loadVideos = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        // Import dynamique pour éviter les erreurs de build
-        const { DEMO_VIDEOS } = await import("@/lib/demo-videos")
-        setAllVideos(DEMO_VIDEOS)
-      } catch (err) {
-        console.error('Error loading videos:', err)
-        setError("Erreur lors du chargement des vidéos")
-        setAllVideos([])
-      } finally {
-        setLoading(false)
-      }
+  const loadLocalVideos = () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setAllVideos(getDemoVideos())
+    } catch (err) {
+      console.error('Error loading videos:', err)
+      setError("Erreur lors du chargement des vidéos")
+      setAllVideos([])
+    } finally {
+      setLoading(false)
     }
-    loadVideos()
+  }
+
+  useEffect(() => {
+    loadLocalVideos()
+    const refreshOnFocus = () => loadLocalVideos()
+    window.addEventListener("focus", refreshOnFocus)
+    window.addEventListener("storage", refreshOnFocus)
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus)
+      window.removeEventListener("storage", refreshOnFocus)
+    }
   }, [])
 
   // Filter and paginate client-side
@@ -73,6 +79,7 @@ export default function VideosPage() {
       filtered = filtered.filter(v =>
         v.title.toLowerCase().includes(search) ||
         (v.description && v.description.toLowerCase().includes(search)) ||
+        (v.athlete && v.athlete.toLowerCase().includes(search)) ||
         (v.athleteRight_name && v.athleteRight_name.toLowerCase().includes(search)) ||
         (v.athleteLeft_name && v.athleteLeft_name.toLowerCase().includes(search)) ||
         (v.uploader_name && v.uploader_name.toLowerCase().includes(search)) ||

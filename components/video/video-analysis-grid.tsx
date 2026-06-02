@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Save } from "lucide-react"
+import { CheckCircle2, Save } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { getVideoAnalysis, saveVideoAnalysis } from "@/lib/demo-local-store"
 
 interface VideoAnalysisData {
   category: "U13" | "U15" | null
@@ -38,6 +40,8 @@ interface VideoAnalysisGridProps {
 }
 
 export function VideoAnalysisGrid({ videoId, onSave }: VideoAnalysisGridProps) {
+  const { toast } = useToast()
+  const [savedAt, setSavedAt] = useState<string | null>(null)
   const [formData, setFormData] = useState<VideoAnalysisData>({
     category: null,
     duration: null,
@@ -57,6 +61,17 @@ export function VideoAnalysisGrid({ videoId, onSave }: VideoAnalysisGridProps) {
     profil: [],
     remarques: "",
   })
+
+  useEffect(() => {
+    const saved = getVideoAnalysis<VideoAnalysisData>(videoId)
+    if (!saved) return
+    setFormData(saved.data)
+    setSavedAt(new Date(saved.savedAt).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }))
+  }, [videoId])
 
   const handleCategoryChange = (value: "U13" | "U15") => {
     setFormData(prev => ({
@@ -98,11 +113,20 @@ export function VideoAnalysisGrid({ videoId, onSave }: VideoAnalysisGridProps) {
   }
 
   const handleSave = () => {
+    const record = saveVideoAnalysis(videoId, formData)
     if (onSave) {
       onSave(formData)
     }
-    // En mode démo, on pourrait sauvegarder dans localStorage
-    console.log("Analysis data saved:", formData)
+    const now = new Date(record.savedAt).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+    setSavedAt(now)
+    toast({
+      title: "Analyse enregistrée",
+      description: "La grille de visionnage a été ajoutée à cette vidéo.",
+    })
   }
 
   const RatingScale = ({ 
@@ -349,7 +373,15 @@ export function VideoAnalysisGrid({ videoId, onSave }: VideoAnalysisGridProps) {
         </div>
 
         {/* Bouton de sauvegarde */}
-        <div className="flex justify-end pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+          {savedAt ? (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              Enregistré à {savedAt}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Complétez la grille puis enregistrez-la sur la vidéo.</div>
+          )}
           <Button onClick={handleSave} className="min-w-[120px]">
             <Save className="h-4 w-4 mr-2" />
             Enregistrer

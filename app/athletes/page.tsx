@@ -11,6 +11,7 @@ import { Search, Users, Plus, Filter } from "lucide-react"
 import { RotateCcw } from "lucide-react";
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { getDemoAthletes } from "@/lib/demo-local-store"
 
 export default function AthletesPage() {
   const [athletes, setAthletes] = useState<any[]>([]);
@@ -38,9 +39,7 @@ export default function AthletesPage() {
       try {
         setLoading(true);
         setError(null);
-        // Import dynamique pour éviter les erreurs de build
-        const { DEMO_ATHLETES } = await import("@/lib/demo-athletes");
-        setAthletes(DEMO_ATHLETES);
+        setAthletes(getDemoAthletes());
       } catch (err) {
         console.error('Error loading athletes:', err);
         setError("Échec du chargement des athlètes");

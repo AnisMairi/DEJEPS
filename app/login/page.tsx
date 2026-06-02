@@ -28,10 +28,10 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6">
           {/* Logo */}
           <div className="flex justify-center">
-            <Link href="/" className="relative w-32 h-32 md:w-40 md:h-40">
+            <Link href="/" className="relative h-28 w-40 md:h-32 md:w-48">
               <Image
-                src="/logo_white.svg"
-                alt="Fédération Française d'Escrime"
+                src="/logo_escrime_idf.jpeg"
+                alt="Logo Escrime IDF"
                 fill
                 className="object-contain"
                 priority
@@ -49,7 +49,9 @@ export default function LoginPage() {
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
                 <Button 
-                  onClick={() => router.push("/dashboard")} 
+                  onClick={() => {
+                    window.location.href = "/dashboard"
+                  }}
                   className="w-full"
                 >
                   Aller au tableau de bord
@@ -93,10 +95,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex justify-center">
-          <Link href="/" className="relative w-32 h-32 md:w-40 md:h-40">
+          <Link href="/" className="relative h-28 w-40 md:h-32 md:w-48">
             <Image
-              src="/logo_white.svg"
-              alt="Fédération Française d'Escrime"
+              src="/logo_escrime_idf.jpeg"
+              alt="Logo Escrime IDF"
               fill
               className="object-contain"
               priority

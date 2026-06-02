@@ -7,6 +7,7 @@ import { TRONC_COMMUN_ITEMS, SABRE_SPECIFIC_ITEMS } from "@/lib/sabre-evaluation
 import type { DemoEvaluation } from "@/lib/demo-evaluations"
 import { getEvaluationsByAthleteId, initializeDemoFederalEvaluations } from "@/lib/demo-evaluations"
 import { computeAge, fencingCategoryFromDob } from "@/lib/fencing-age-category"
+import { getDemoAthleteById, getDemoVideos } from "@/lib/demo-local-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -120,9 +121,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
         // Initialiser les évaluations fédérales de démo
         initializeDemoFederalEvaluations();
         
-        // Import dynamique pour éviter les erreurs de build
-        const { DEMO_ATHLETES } = await import("@/lib/demo-athletes");
-        const demoAthlete = DEMO_ATHLETES.find(a => a.id === athleteId);
+        const demoAthlete = getDemoAthleteById(athleteId);
         
         if (!demoAthlete) {
           setError("Athlète non trouvé");
@@ -131,9 +130,8 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
         }
 
         // Charger les vidéos de démo pour cet athlète
-        const { DEMO_VIDEOS } = await import("@/lib/demo-videos");
         const athleteFullName = `${demoAthlete.first_name} ${demoAthlete.last_name}`;
-        const athleteVideos = DEMO_VIDEOS.filter(v => 
+        const athleteVideos = getDemoVideos().filter(v => 
           v.athlete === athleteFullName || v.athlete.includes(athleteFullName)
         );
 
@@ -313,6 +311,20 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     evaluatedBy: "Master Laurent",
   };
 
+  const latestSabreTalentEval = evaluations[0]
+  const localEvaluationSummary = latestSabreTalentEval
+    ? {
+        posture: (latestSabreTalentEval.tc.tc3 || 1) * 25,
+        speed: (latestSabreTalentEval.tc.tc6 || 1) * 25,
+        positioning: (latestSabreTalentEval.tc.tc7 || 1) * 25,
+        technique: (latestSabreTalentEval.tc.tc2 || 1) * 25,
+        tactics: (latestSabreTalentEval.tc.tc5 || 1) * 25,
+        overall: Math.round((latestSabreTalentEval.totalScore / 28) * 100),
+        lastEvaluated: new Date(latestSabreTalentEval.createdAt).toLocaleDateString("fr-FR"),
+        evaluatedBy: latestSabreTalentEval.evaluatorName,
+      }
+    : null
+
   const fakeVideos = [
     {
       id: "1",
@@ -372,7 +384,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
       winRate: athlete?.win_rate || fakeStats.winRate,
       recentForm: athlete?.recent_form || fakeStats.recentForm,
     },
-    evaluations: athlete?.evaluations || fakeEvaluations,
+    evaluations: localEvaluationSummary || athlete?.evaluations || fakeEvaluations,
     performanceHistory: Array.isArray(athlete?.performance_history) && athlete.performance_history.length > 0
       ? athlete.performance_history
       : fakePerformanceHistory,
@@ -402,18 +414,19 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
     { subject: "Tactique", A: mappedAthlete.evaluations.tactics, fullMark: 10 },
   ]
 
-  // Get latest federal evaluation for Sabre Talent radars
+  // Get latest evaluation for Sabre Talent radars
   const latestFederalEval = evaluations.find(e => e.kind === "federal")
+  const latestTalentEval = latestFederalEval || evaluations[0]
 
-  const tcRadarData = latestFederalEval ? TRONC_COMMUN_ITEMS.map(item => ({
+  const tcRadarData = latestTalentEval ? TRONC_COMMUN_ITEMS.map(item => ({
     subject: item.code,
-    A: latestFederalEval.tc[item.key] || 1,
+    A: latestTalentEval.tc[item.key] || 1,
     fullMark: 4
   })) : []
 
   const sabreRadarData = latestFederalEval?.s ? SABRE_SPECIFIC_ITEMS.map(item => ({
     subject: item.code,
-    A: latestFederalEval.s[item.key] || 1,
+    A: latestFederalEval.s![item.key] || 1,
     fullMark: 4
   })) : []
 
@@ -424,6 +437,10 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
   })
   const physRec = getPhysicalRecord(athleteId)
   const hasNationalCampPhysicalTests = Boolean(physRec.session1 || physRec.session2)
+  const isLocalAthlete = mappedAthlete.id.startsWith("local_")
+  const evaluationHref = isLocalAthlete
+    ? `/athletes/evaluate?id=${encodeURIComponent(mappedAthlete.id)}`
+    : `/athletes/${mappedAthlete.id}/evaluate`
 
   return (
     <div className="space-y-6">
@@ -436,13 +453,13 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
         <div className="flex flex-wrap gap-2">
           {(user?.role === "coach" || user?.role === "local_contact" || user?.role === "administrator") && (
             <Button variant="outline" asChild>
-              <Link href={`/athletes/${mappedAthlete.id}/evaluate`}>
+              <Link href={evaluationHref}>
                 <Star className="h-4 w-4 mr-2" />
                 Pré-évaluation MA
               </Link>
             </Button>
           )}
-          {user?.role === "administrator" && (
+          {user?.role === "administrator" && !isLocalAthlete && (
             <Button variant="outline" asChild>
               <Link href={`/athletes/${mappedAthlete.id}/physical-tests`}>
                 <Activity className="h-4 w-4 mr-2" />
@@ -450,12 +467,14 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
               </Link>
             </Button>
           )}
-          <Button asChild>
-            <Link href={`/athletes/${mappedAthlete.id}/edit`}>
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
-            </Link>
-          </Button>
+          {!isLocalAthlete && (
+            <Button asChild>
+              <Link href={`/athletes/${mappedAthlete.id}/edit`}>
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -622,12 +641,14 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
               </div>
 
               {/* Sabre Talent Evaluation Radars */}
-              {latestFederalEval && (
+              {latestTalentEval && (
                 <div className="grid gap-6 md:grid-cols-2">
                   <Card>
                     <CardHeader>
                       <CardTitle>Tronc Commun (TC)</CardTitle>
-                      <p className="text-sm text-muted-foreground">Évaluation fédérale - 7 compétences communes</p>
+                      <p className="text-sm text-muted-foreground">
+                        {latestTalentEval.kind === "ma_pre" ? "Pré-évaluation MA" : "Évaluation fédérale"} - 7 compétences communes
+                      </p>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={250}>
@@ -641,22 +662,24 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Spécifiques Sabre (S)</CardTitle>
-                      <p className="text-sm text-muted-foreground">Évaluation fédérale - 8 compétences sabre</p>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <RadarChart data={sabreRadarData}>
-                          <PolarGrid />
-                          <PolarAngleAxis dataKey="subject" />
-                          <PolarRadiusAxis angle={90} domain={[0, 4]} />
-                          <Radar name="S" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
+                  {latestFederalEval?.s && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Spécifiques Sabre (S)</CardTitle>
+                        <p className="text-sm text-muted-foreground">Évaluation fédérale - 8 compétences sabre</p>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <RadarChart data={sabreRadarData}>
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="subject" />
+                            <PolarRadiusAxis angle={90} domain={[0, 4]} />
+                            <Radar name="S" dataKey="A" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
 
@@ -801,7 +824,7 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                     <p className="text-muted-foreground">Aucune évaluation Sabre Talent enregistrée pour cet athlète.</p>
                     {(user?.role === "local_contact" || user?.role === "administrator") && (
                       <Button asChild>
-                        <Link href={`/athletes/${athleteId}/evaluate`}>
+                        <Link href={evaluationHref}>
                           <Star className="h-4 w-4 mr-2" />
                           Pré-évaluation MA (tronc commun)
                         </Link>
@@ -856,8 +879,16 @@ export function ComprehensiveAthleteProfile({ athleteId }: ComprehensiveAthleteP
                         )}
                         {ev.observations && (
                           <div>
-                            <h4 className="font-semibold text-sm mb-1">Observations</h4>
+                            <h4 className="font-semibold text-sm mb-1">
+                              {ev.kind === "ma_pre" ? "Bilan individuel général" : "Observations"}
+                            </h4>
                             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ev.observations}</p>
+                          </div>
+                        )}
+                        {ev.potential && (
+                          <div className="rounded-lg border p-3 text-sm">
+                            <span className="font-semibold">Potentiel : </span>
+                            {ev.potential}
                           </div>
                         )}
                       </CardContent>

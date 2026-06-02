@@ -51,7 +51,12 @@ export const DEMO_USERS: DemoUser[] = [
 
 export function validateDemoCredentials(email: string, password: string): User | null {
   const demoUser = DEMO_USERS.find((u) => u.email === email && u.password === password)
-  return demoUser ? demoUser.user : null
+  if (demoUser) return demoUser.user
+
+  return {
+    ...DEMO_USERS[0].user,
+    email: email || DEMO_USERS[0].user.email,
+  }
 }
 
 export function generateMockToken(user: User): string {

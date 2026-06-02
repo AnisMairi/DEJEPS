@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +20,6 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const { login, isLoading } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +27,7 @@ export function LoginForm() {
 
     try {
       await login(email, password)
-      router.push("/dashboard")
+      window.location.href = "/dashboard"
     } catch (err: any) {
       if (err.message === "wrong_credentials") {
         setError("Email ou mot de passe incorrect.")
@@ -61,11 +59,10 @@ export function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="votre@email.fr"
+              placeholder="Identifiant libre pour la demo"
               autoComplete="email"
               aria-label="Adresse email"
             />
@@ -79,7 +76,6 @@ export function LoginForm() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
                 placeholder="••••••••"
                 autoComplete="current-password"
                 aria-label="Mot de passe"

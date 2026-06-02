@@ -42,6 +42,8 @@ export interface DemoEvaluation {
   /** Présent seulement si kind === "federal" */
   s?: Record<SKey, number>
   observations: string
+  generalSummary?: string
+  potential?: "Potentiel encore à déterminer" | "Potentiel intéressant" | "Fort potentiel"
 
   totalScore: number
 }

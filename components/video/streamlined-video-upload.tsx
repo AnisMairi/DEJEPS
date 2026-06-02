@@ -29,12 +29,11 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { useVideoApi } from "@/hooks/use-video-api";
-import { useAthleteApi } from "@/hooks/use-athlete-api";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
-import { COMPETITION_TYPES, COMPETITION_GROUPS } from "@/lib/utils"
+import { COMPETITION_GROUPS } from "@/lib/utils"
 import React from "react"
+import { getDemoAthletes, saveLocalDemoVideo } from "@/lib/demo-local-store"
 
 interface Athlete {
   id: number
@@ -62,6 +61,84 @@ const weapons = [
   { display: "Sabre", value: "sabre" },
   { display: "Épée", value: "epee" }
 ]
+
+function formatVideoDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "00:00"
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
+}
+
+function generateVideoThumbnail(sourceUrl: string): Promise<{ thumbnail: string; duration: string }> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video")
+    let done = false
+    video.src = sourceUrl
+    video.muted = true
+    video.playsInline = true
+    video.preload = "metadata"
+
+    const fallback = () => {
+      if (done) return
+      done = true
+      resolve({
+        thumbnail: "https://placehold.co/400x225?text=Video",
+        duration: formatVideoDuration(video.duration),
+      })
+    }
+
+    const capture = () => {
+      if (done) return
+      try {
+        const canvas = document.createElement("canvas")
+        canvas.width = 400
+        canvas.height = 225
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          fallback()
+          return
+        }
+        ctx.fillStyle = "#020617"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        const videoRatio = video.videoWidth / video.videoHeight
+        const canvasRatio = canvas.width / canvas.height
+        let drawWidth = canvas.width
+        let drawHeight = canvas.height
+        let offsetX = 0
+        let offsetY = 0
+
+        if (videoRatio > canvasRatio) {
+          drawHeight = canvas.width / videoRatio
+          offsetY = (canvas.height - drawHeight) / 2
+        } else {
+          drawWidth = canvas.height * videoRatio
+          offsetX = (canvas.width - drawWidth) / 2
+        }
+
+        ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight)
+        done = true
+        resolve({
+          thumbnail: canvas.toDataURL("image/jpeg", 0.78),
+          duration: formatVideoDuration(video.duration),
+        })
+      } catch {
+        fallback()
+      }
+    }
+
+    video.onerror = fallback
+    video.onloadedmetadata = () => {
+      const captureAt = Number.isFinite(video.duration) && video.duration > 2 ? 1 : 0
+      if (captureAt === 0) {
+        video.onloadeddata = capture
+      } else {
+        video.currentTime = captureAt
+      }
+    }
+    video.onseeked = capture
+    window.setTimeout(fallback, 5000)
+  })
+}
 
 function AthleteSelect({
   label,
@@ -221,40 +298,38 @@ export function StreamlinedVideoUpload() {
   const [loadingAthletes, setLoadingAthletes] = useState(true)
 
   const router = useRouter();
-  const { uploadVideo } = useVideoApi();
-  const { getAthletes } = useAthleteApi();
 
   // Load athletes on component mount
   useEffect(() => {
     const loadAthletes = async () => {
       try {
         setLoadingAthletes(true)
-        const athletesData = await getAthletes({ limit: 100 })
+        const athletesData = getDemoAthletes().map((athlete, index) => ({
+          id: Number(String(athlete.id).replace("local_", "")) || 10000 + index,
+          first_name: athlete.first_name,
+          last_name: athlete.last_name,
+          date_of_birth: athlete.date_of_birth,
+          gender: athlete.gender,
+          weapon: athlete.weapon === "epee" ? "épée" : athlete.weapon,
+          skill_level: athlete.skill_level,
+          club: athlete.club,
+          region: athlete.region,
+        })) as Athlete[]
         setAthletes(athletesData)
       } catch (error) {
         console.error("Error loading athletes:", error)
-        try {
-          const { DEMO_ATHLETES } = await import("@/lib/demo-athletes")
-          const { demoAthletesToApiList } = await import("@/lib/demo-athlete-api-map")
-          setAthletes(demoAthletesToApiList(DEMO_ATHLETES) as Athlete[])
-          toast({
-            title: "Mode démo",
-            description: "Liste des athlètes chargée depuis les données locales (API indisponible).",
-          })
-        } catch {
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger la liste des athlètes",
-            variant: "destructive",
-          })
-        }
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger la liste des athlètes",
+          variant: "destructive",
+        })
       } finally {
         setLoadingAthletes(false)
       }
     }
 
     loadAthletes()
-  }, [getAthletes])
+  }, [])
 
   // Add a useEffect to reset form fields when athleteMode changes
   useEffect(() => {
@@ -575,78 +650,57 @@ export function StreamlinedVideoUpload() {
                 setUploading(true);
                 setUploadError(null);
                 setUploadSuccess(null);
-                
-                // Log form data for debugging
-                console.log('=== FORM DATA BEING SENT ===');
-                console.log('Athlete Mode:', athleteMode);
-                console.log('Video Title:', videoTitle);
-                console.log('Video Description:', videoDescription);
-                console.log('Selected Weapon:', selectedWeapon);
-                console.log('Competition Type:', competitionType);
-                console.log('Video Date:', videoDate);
-                console.log('File:', files[0]?.file);
-                if (athleteMode === "single") {
-                  console.log('Selected Athlete:', selectedAthlete);
-                } else {
-                  console.log('Selected Athlete Left:', selectedAthleteLeft);
-                  console.log('Selected Athlete Right:', selectedAthleteRight);
-                  console.log('Score Left:', scoreLeft);
-                  console.log('Score Right:', scoreRight);
-                }
-                console.log('===========================');
-                
-                // Validation checks
-                console.log('=== VALIDATION CHECKS ===');
-                console.log('Form Valid:', isFormValid);
-                console.log('Has File:', files.length > 0);
-                console.log('Has Title:', !!videoTitle);
-                console.log('Has Competition Type:', !!competitionType);
-                console.log('Has Date:', !!videoDate);
-                if (athleteMode === "single") {
-                  console.log('Has Athlete:', !!selectedAthlete);
-                } else {
-                  console.log('Has Athlete Left:', !!selectedAthleteLeft);
-                  console.log('Has Athlete Right:', !!selectedAthleteRight);
-                  console.log('Has Score Left:', !!scoreLeft);
-                  console.log('Has Score Right:', !!scoreRight);
-                }
-                console.log('========================');
-                
+
                 try {
-                  let response;
-                  
+                  const file = files[0]?.file;
+                  if (!file) throw new Error("Veuillez sélectionner une vidéo.");
+                  const sourceUrl = videoPreview || URL.createObjectURL(file);
+                  const thumbnailData = await generateVideoThumbnail(sourceUrl);
+                  const weaponValue = weapons.find(w => w.display === selectedWeapon)?.value || "sabre";
+                  const uploadedVideoId = `local_video_${Date.now()}`;
+                  let athleteLabel = "Athlète";
+                  let athleteRightId: string | null = null;
+                  let athleteLeftId: string | null = null;
+
                   if (athleteMode === "single") {
                     if (!selectedAthlete || !selectedAthlete.id) throw new Error("Veuillez sélectionner un athlète.");
-                    response = await uploadVideo({
-                      file: files[0].file,
-                      title: videoTitle,
-                      description: videoDescription,
-                      athleteRight_id: Number(selectedAthlete.id),
-                      athleteLeft_id: Number(selectedAthlete.id),
-                      weapon_type: weapons.find(w => w.display === selectedWeapon)?.value as "foil" | "sabre" | "epee" | undefined,
-                      competition_name: competitionType,
-                      competition_date: videoDate,
-                      is_public: true,
-                    });
+                    athleteLabel = `${selectedAthlete.first_name} ${selectedAthlete.last_name}`;
+                    athleteRightId = String(selectedAthlete.id);
+                    athleteLeftId = String(selectedAthlete.id);
                   } else {
                     if (!selectedAthleteRight || !selectedAthleteRight.id || !selectedAthleteLeft || !selectedAthleteLeft.id) throw new Error("Veuillez sélectionner les deux athlètes.");
-                    response = await uploadVideo({
-                      file: files[0].file,
-                      title: videoTitle,
-                      description: videoDescription,
-                      athleteRight_id: Number(selectedAthleteRight.id),
-                      athleteLeft_id: Number(selectedAthleteLeft.id),
-                      weapon_type: weapons.find(w => w.display === selectedWeapon)?.value as "foil" | "sabre" | "epee" | undefined,
-                      competition_name: competitionType,
-                      competition_date: videoDate,
-                      score: `${scoreLeft}-${scoreRight}`,
-                      is_public: true,
-                    });
+                    athleteLabel = `${selectedAthleteLeft.first_name} ${selectedAthleteLeft.last_name} vs ${selectedAthleteRight.first_name} ${selectedAthleteRight.last_name}`;
+                    athleteLeftId = String(selectedAthleteLeft.id);
+                    athleteRightId = String(selectedAthleteRight.id);
                   }
-                  setUploadSuccess("Vidéo envoyée avec succès !");
+
+                  saveLocalDemoVideo({
+                    id: uploadedVideoId,
+                    title: videoTitle,
+                    thumbnail: thumbnailData.thumbnail,
+                    duration: thumbnailData.duration,
+                    views: 0,
+                    comments: 0,
+                    athlete: athleteLabel,
+                    uploader: "Administrateur",
+                    uploadedAt: "il y a moins d'une heure",
+                    weapon_type: weaponValue,
+                    competition_name: competitionType,
+                    competition_date: videoDate,
+                    category: "M13",
+                    age: 13,
+                    ageCategory: "M13",
+                    club: selectedAthlete?.club || selectedAthleteLeft?.club || selectedAthleteRight?.club,
+                    sourceUrl,
+                    description: videoDescription,
+                    athleteRight_id: athleteRightId,
+                    athleteLeft_id: athleteLeftId,
+                  });
+
+                  setUploadSuccess("Vidéo ajoutée avec succès !");
                   toast({
                     title: "Succès",
-                    description: "La vidéo a été ajoutée avec succès !",
+                    description: "La vidéo est disponible dans la liste.",
                   });
                   // Reset form
                   setFiles([]);
@@ -666,26 +720,9 @@ export function StreamlinedVideoUpload() {
                   setAthleteError("");
                   setAthleteLeftError("");
                   setAthleteRightError("");
-                  // Do not redirect
+                  router.push(`/videos/watch?id=${encodeURIComponent(uploadedVideoId)}`);
                 } catch (err: any) {
-                  console.error("=== UPLOAD COMPONENT ERROR ===");
-                  console.error("Error object:", err);
-                  console.error("Error message:", err.message);
-                  console.error("Error stack:", err.stack);
-                  console.error("=============================");
-                  
-                  // Provide more specific error messages
-                  let errorMessage = err.message;
-                  if (err.message.includes('422')) {
-                    errorMessage = "Erreur de validation: Vérifiez que tous les champs requis sont remplis correctement.";
-                  } else if (err.message.includes('401')) {
-                    errorMessage = "Erreur d'authentification: Veuillez vous reconnecter.";
-                  } else if (err.message.includes('403')) {
-                    errorMessage = "Accès refusé: Vous n'avez pas les permissions nécessaires.";
-                  } else if (err.message.includes('500')) {
-                    errorMessage = "Erreur serveur: Veuillez réessayer plus tard.";
-                  }
-                  
+                  const errorMessage = err.message || "Impossible d'ajouter la vidéo.";
                   setUploadError(errorMessage);
                   toast({
                     title: "Erreur",

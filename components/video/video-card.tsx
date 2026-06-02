@@ -42,6 +42,10 @@ const weaponLabels: Record<string, string> = {
 }
 
 export function VideoCard({ video }: VideoCardProps) {
+  const watchHref = video.id.startsWith("local_video_")
+    ? `/videos/watch?id=${encodeURIComponent(video.id)}`
+    : `/videos/${video.id}`
+
   return (
     <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border shadow-lg bg-card text-card-foreground">
         {/* Thumbnail Container */}
@@ -121,7 +125,7 @@ export function VideoCard({ video }: VideoCardProps) {
             className="w-full"
             variant="default"
           >
-            <Link href={`/videos/${video.id}`}>
+            <Link href={watchHref}>
               <Play className="h-4 w-4 mr-2" />
               Watch Video
             </Link>

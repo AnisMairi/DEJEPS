@@ -36,12 +36,11 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         {/* Logo - Hidden on mobile, shown on tablet+ */}
         <div className="mr-4 hidden sm:flex">
-          <Link href="/dashboard" className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex h-10 w-24 items-center overflow-hidden">
             <img
-              src="/logo_white.svg"
-              alt="Logo"
-              className="h-6 sm:h-8 w-auto"
-              style={{ maxWidth: "150px", height: "auto" }}
+              src="/logo_escrime_idf.jpeg"
+              alt="Logo Escrime IDF"
+              className="max-h-10 w-full object-contain"
             />
           </Link>
         </div>

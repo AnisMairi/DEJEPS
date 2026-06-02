@@ -1,12 +1,12 @@
 /** Tronc commun TC1–TC7 — pré-évaluation MA et grille fédérale */
 export const TRONC_COMMUN_ITEMS = [
-  { key: "tc1", code: "TC1", label: "Posture et équilibre" },
-  { key: "tc2", code: "TC2", label: "Mobilité des appuis" },
-  { key: "tc3", code: "TC3", label: "Coordination générale" },
-  { key: "tc4", code: "TC4", label: "Gestion de la distance" },
-  { key: "tc5", code: "TC5", label: "Lecture de jeu" },
-  { key: "tc6", code: "TC6", label: "Détermination" },
-  { key: "tc7", code: "TC7", label: "Gestion émotionnelle" },
+  { key: "tc1", code: "TC1", label: "Qualités physiques" },
+  { key: "tc2", code: "TC2", label: "Qualités techniques" },
+  { key: "tc3", code: "TC3", label: "Posture/garde" },
+  { key: "tc4", code: "TC4", label: "Motivation" },
+  { key: "tc5", code: "TC5", label: "Techniques de main" },
+  { key: "tc6", code: "TC6", label: "Mobilité" },
+  { key: "tc7", code: "TC7", label: "Capacités cognitives" },
 ] as const
 
 export type TCKey = (typeof TRONC_COMMUN_ITEMS)[number]["key"]
